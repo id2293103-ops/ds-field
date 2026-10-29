@@ -1,0 +1,9 @@
+# 올리는 파일만 허용 (DS-PLAN 등 다른 파일은 절대 안 올라감)
+*
+!.gitignore
+!index.html
+!DS현장야장.html
+!manifest.webmanifest
+!sw.js
+!icon-192.png
+!icon-512.png

@@ -621,6 +621,12 @@ addEventListener('resize',resize);
 /* 홈 화면 앱(PWA): https 주소로 열었을 때만 — 오프라인 실행, 자동보관이 지워지지 않게 */
 if('serviceWorker'in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+/* 새 판 확인: 앱이 다시 앞으로 올 때·1시간마다 서버의 앱과 비교 → 다르면 [⟳ 새 판 적용] (그리는 중 저절로 새로고침 안 함) */
+async function checkUpdate(){if(!/^https?:/.test(location.protocol)||$('bUpd'))return;
+  try{const t=await (await fetch(location.pathname,{cache:'no-store'})).text(),s=t.slice(t.indexOf('<script>')+8,t.lastIndexOf('<\/script>'));   /* <\/ = html 안에서 스크립트가 끊기지 않게 */
+    if(s.length>1000&&s!==document.scripts[document.scripts.length-1].textContent){const b=document.createElement('button');b.id='bUpd';b.className='on';b.textContent='⟳ 새 판 적용';
+      b.onclick=async()=>{processInk();try{await idbSet(D);}catch(e){}location.reload();};$('top').insertBefore(b,$('bSave'));toast('새 판이 나왔습니다 — 위의 [⟳ 새 판 적용]을 누르세요');}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});setInterval(checkUpdate,36e5);setTimeout(checkUpdate,8000);
 let instEv=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();instEv=e;$('bInst').style.display='';});
 $('bInst').onclick=()=>{if(!instEv)return;instEv.prompt();instEv.userChoice.finally(()=>{instEv=null;$('bInst').style.display='none';});};
 hwLoad();

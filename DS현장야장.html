@@ -59,7 +59,7 @@ dialog small{color:#5b6b80;font-size:12px}
   <button id="bInst" style="display:none">📲 설치</button>
   <button id="bSave" class="on">💾 저장</button>
 </div>
-<div id="cbar" class="bar"><button id="bLeg">📋 범례</button><div class="sep"></div><div id="sws" style="display:flex;gap:6px"></div><input id="cCustom" type="color" title="다른 색" style="width:42px;height:38px;padding:2px;flex:none"><div class="sep"></div><small style="color:#5b6b80;white-space:nowrap">톡 = 기둥 · 긋기 = 보·벽 · 규격은 왼쪽 범례에</small></div>
+<div id="cbar" class="bar"><button id="bLeg">📋 범례</button><div class="sep"></div><div id="sws" style="display:flex;gap:6px"></div><input id="cCustom" type="color" title="다른 색" style="width:42px;height:38px;padding:2px;flex:none"><div class="sep"></div><div id="cur" style="display:flex;gap:4px;align-items:center;white-space:nowrap;font-size:13px"></div></div>
 <canvas id="cv"></canvas><div id="leg"></div>
 <div id="hint"><span></span></div>
 <button id="bAddPen">＋규격</button></div>
@@ -88,7 +88,7 @@ const SPECS={col:['400x400','500x500','500x400','400x500','600x600','300x300','�
   beam:['300x600','300x500','300x700','350x600','400x600','400x700','250x500','200x400','300x450','H-300x150','H-350x175','H-400x200','H-450x200','H-500x200','ㄷ150x75'],
   wall:['200','100','190','RC150','RC200','RC250','RC300'],truss:['P-48.6x2.3','P-60.5x3.2','P-76.3x3.2','L-50x50x6','L-65x65x6','ㄷ100x50']};
 const KC={wall:['#343a40','#868e96','#795548','#495057'],col:['#e03131','#c2255c','#f76707','#9c36b5','#d6336c'],beam:['#f5c518','#4dabf7','#9775fa','#3bc9db','#ff8787','#69db7c','#a9743b','#2b8a7e','#e599f7','#c9a227'],truss:['#ae3ec9','#7048e8','#1098ad','#0b7285']};
-const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (한 획 = 한 부재, 45° 넘게 꺾으면 꺾임) · 규격은 왼쪽 범례 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
+const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (위에서 보|벽|트러스 · 규격 고름) · 한 획 = 한 직선 부재 · 기둥 규격 다르면 다른 색으로 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
   dim:'부재 옆에 숫자 쓰기 = 그 길이로 맞춤 · 부재 톡 = 길이 치수(바깥쪽) · 치수 칸에 실측 숫자 → 그림이 그 길이로 늘고 줄어듦 · 회색 ≈ = 그린 크기 · 단위 m (2600 = 2.6) · 숫자 톡 = 고치기',
   memo:'자유 메모 (실명·Mirror·특기사항 등 — 모델엔 안 들어가고 DS-PLAN 배경 그림으로 감)',mark:'조사 위치 톡 (종류는 오른쪽에서 선택)',photo:'사진 찍을 위치 톡 → 카메라',del:'지울 것을 톡 또는 문지르기',
   sel:'톡 = 선택 → 끌어서 옮기기 · 선 끝 동그라미 끌기 = 늘이기/줄이기 · 아래 색 버튼 = 규격 바꾸기 · 기둥을 옮기면 붙은 선도 따라옴',
@@ -107,8 +107,9 @@ function autoColor(kind,except){const used=D.pal.filter(k=>k!==except&&k.kind===
 function penFor(kind,spec){let k=D.pal.find(x=>x.kind===kind&&x.spec===spec);if(!k){k={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind,spec,c:autoColor(kind)};D.pal.push(k);}return k;}
 /* 위 색 줄: 색 먼저 고르고 그림 (삼성노트처럼) — 톡 = 기둥, 긋기 = 보·벽. 색마다 규격은 왼쪽 범례에서 */
 const COLORS=['#343a40','#e03131','#f5c518','#4dabf7','#9775fa','#3bc9db','#69db7c','#f76707','#ff8787','#a9743b','#2b8a7e','#ae3ec9'];
+const defKind=c=>c==='#343a40'||c==='#868e96'?'wall':c==='#ae3ec9'?'truss':'beam';   /* 검정 = 벽, 보라 = 트러스, 나머지 = 보 (위에서 바꿀 수 있음) */
 function penAt(g,kind){const c=penColor.toLowerCase();let k=D.pal.find(x=>x.c.toLowerCase()===c&&(g==='col')===(x.kind==='col'));
-  if(!k){k={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:g==='col'?'col':kind||(c==='#343a40'||c==='#868e96'?'wall':c==='#ae3ec9'?'truss':'beam'),spec:'',c:penColor};D.pal.push(k);}
+  if(!k){k={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:g==='col'?'col':kind||defKind(c),spec:'',c:penColor};D.pal.push(k);}
   lastKind[c]=g;return k;}
 const specList=kind=>[...new Set(D.pal.filter(k=>k.kind===kind&&k.spec).map(k=>k.spec).concat(SPECS[kind]))];
 function toast(s){const t=$('toast');t.textContent=s;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3200);}
@@ -193,11 +194,9 @@ function alignSnap(q,p,tol){let x=q[0],y=q[1],bx=tol,by=tol;nodes(p).forEach(n=>
 function snapPt(q,p,tol){let n=snapNode(q,p,tol);if(n)return[n,'node'];n=snapMid(q,p,tol*0.8);if(n)return[n,'mid'];n=snapSeg(q,p,tol*0.7);if(n)return[n,'seg'];return[alignSnap(gs(q),p,tol*0.45),gridSnap?'grid':'free'];}
 const SNAP=30;   /* 화면 px — 이 안이면 붙음 */
 /* 한 획 → 꺾인 곳마다 직선 (가로/세로는 곧게, 끝은 기둥·선 끝에 붙임) — 그리는 중 미리보기에도 씀 */
-/* 꺾임은 45° 넘고 양쪽이 충분히 길 때만 (손떨림은 한 직선) */
-function corners(pts){const v=rdp(pts,22/V.z);for(let i=1;i+1<v.length;){const a=v[i-1],b=v[i],c=v[i+1],ux=b[0]-a[0],uy=b[1]-a[1],wx=c[0]-b[0],wy=c[1]-b[1],lu=Math.hypot(ux,uy),lw=Math.hypot(wx,wy);
-  if(Math.acos(Math.max(-1,Math.min(1,(ux*wx+uy*wy)/((lu*lw)||1))))<Math.PI/4||Math.min(lu,lw)*V.z<30)v.splice(i,1);else i++;}return v;}
+
 function snapMid(q,p,tol){let b=null,bd=tol;p.hl.forEach(s=>{const m=[(s.pts[0][0]+s.pts[1][0])/2,(s.pts[0][1]+s.pts[1][1])/2],d=Math.hypot(m[0]-q[0],m[1]-q[1]);if(d<bd){bd=d;b=m;}});return b&&b.map(r1);}   /* 선 가운데 */
-function polySegs(pts){const p=pg(),tol=SNAP/V.z,v=corners(pts),segs=[];let a=snapPt(v[0],p,tol)[0];
+function polySegs(pts){const p=pg(),tol=SNAP/V.z,v=[pts[0],pts[pts.length-1]],segs=[];   /* 한 획 = 무조건 한 직선 (시작점 → 펜 뗀 곳) */let a=snapPt(v[0],p,tol)[0];
   for(let i=1;i<v.length;i++){let b=v[i];const dx=b[0]-a[0],dy=b[1]-a[1],hor=Math.abs(dy)<Math.abs(dx)*0.22,ver=Math.abs(dx)<Math.abs(dy)*0.22;   /* 약 12° 안쪽이면 곧게 */
     b=gs(b);if(hor)b=[b[0],a[1]];else if(ver)b=[a[0],b[1]];
     const nb=snapNode(b,p,tol)||snapMid(b,p,tol*0.8)||snapSeg(b,p,tol*0.7);
@@ -236,10 +235,10 @@ const beamCls=(p,s)=>endOn(p,s.pts[0],s)==='B'||endOn(p,s.pts[1],s)==='B'?'B':'G
 function markMap(){if(mkCache&&mkCache.v===MKV)return mkCache;const m=new Map(),info={},seq={},keyN={},lv=p=>Math.min(9e9,...pageFl(p).map(lvl));
   const plans=D.pages.filter(p=>p.type==='plan').sort((a,b)=>lv(a)-lv(b)),L=(p,s)=>lenSplit?realLen(p,s.pts[0],s.pts[1]).toFixed(1):'';
   const name=(pre,key,desc)=>{const k=pre+'|'+key;if(!keyN[k]){keyN[k]=pre+(seq[pre]=(seq[pre]||0)+1);info[keyN[k]]=desc;}return keyN[k];};
-  plans.forEach(p=>{p.cols.forEach(c=>{const k=pal(c.p),sp=nspec(c.r?(rotSpec(k.spec)||k.spec):k.spec),st=/^(H|□|P-?\d+(\.\d+)?X)/.test(sp);m.set(c,name(st?'SC':'C',sp,sp||'(규격 없음)'));});
-    p.hl.forEach(s=>{const k=pal(s.p);if(k.kind==='beam'&&beamCls(p,s)==='G'){const l=L(p,s);m.set(s,name('G',nspec(k.spec)+'|'+l,(k.spec||'(규격 없음)')+(l?' L='+l:'')));}});});
-  plans.forEach(p=>p.hl.forEach(s=>{const k=pal(s.p);if(k.kind==='beam'&&!m.has(s)){const l=L(p,s);m.set(s,name('B',nspec(k.spec)+'|'+l,(k.spec||'(규격 없음)')+(l?' L='+l:'')));}
-    else if(k.kind==='wall')m.set(s,name('W',nspec(k.spec),k.spec||'(규격 없음)'));}));
+  plans.forEach(p=>{p.cols.forEach(c=>{const k=pal(c.p),sp=nspec(c.r?(rotSpec(k.spec)||k.spec):k.spec),st=/^(H|□|P-?\d+(\.\d+)?X)/.test(sp);m.set(c,name(st?'SC':'C',sp||'#'+k.id,sp||'(규격 없음)'));});
+    p.hl.forEach(s=>{const k=pal(s.p);if(k.kind==='beam'&&beamCls(p,s)==='G'){const l=L(p,s);m.set(s,name('G',(nspec(k.spec)||'#'+k.id)+'|'+l,(k.spec||'(규격 없음)')+(l?' L='+l:'')));}});});
+  plans.forEach(p=>p.hl.forEach(s=>{const k=pal(s.p);if(k.kind==='beam'&&!m.has(s)){const l=L(p,s);m.set(s,name('B',(nspec(k.spec)||'#'+k.id)+'|'+l,(k.spec||'(규격 없음)')+(l?' L='+l:'')));}
+    else if(k.kind==='wall')m.set(s,name('W',nspec(k.spec)||'#'+k.id,k.spec||'(규격 없음)'));}));
   return mkCache={v:MKV,m,info};}
 const lenM=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1])/GRID;   /* 그린 길이 (m, 모눈 1칸 = 1 m) */
 function mkCol(q){const p=pg(),tol=24/V.z,hit=p.cols.find(c=>Math.hypot(c.x-q[0],c.y-q[1])<tol);
@@ -531,13 +530,20 @@ function fit(){const B=bounds(pg()),lw=legOpen?280:0,W=cv.clientWidth-lw,H=cv.cl
   const z=Math.max(.1,Math.min(4,Math.min((W-120)/((B[2]-B[0])||1),(H-140)/((B[3]-B[1])||1))));V={z,ox:lw+(W-(B[2]-B[0])*z)/2-B[0]*z,oy:(H-(B[3]-B[1])*z)/2-B[1]*z+10};draw();}
 function ui(){$('site').value=D.site;
   $('tabs').innerHTML=D.pages.map((p,i)=>`<button data-pg="${i}" class="${i===P?'on':''}">${p.type==='elev'?'△ ':p.type==='memo'?'✎ ':''}${esc(flLabel(p))}</button>`).join('');
-  $('sws').innerHTML=[...new Set(COLORS.concat(D.pal.map(k=>k.c)).map(c=>c.toLowerCase()))].map(c=>`<button class="sw${c===penColor.toLowerCase()&&tool==='mem'?' on':''}" data-c="${c}" style="background:${c}"></button>`).join('');legRender();
+  $('sws').innerHTML=[...new Set(COLORS.concat(D.pal.map(k=>k.c)).map(c=>c.toLowerCase()))].map(c=>`<button class="sw${c===penColor.toLowerCase()&&tool==='mem'?' on':''}" data-c="${c}" style="background:${c}"></button>`).join('');curRender();legRender();
   $('tools').innerHTML=TOOLS.map(([t,n])=>`<button data-tool="${t}" class="${t===tool?'on':''}">${n}</button>`).join('');
   $('markT').style.display=tool==='mark'?'':'none';$('hint').firstChild.textContent=HINT[tool];
   $('bGrid').className=gridSnap?'on':'';if(!selItem())sel=null;selbar();draw();}
 $('markT').innerHTML=MARKS.map(([t,n])=>`<option value="${t}">${t==='SS'?'Ss':t==='ETC'?'M':t} ${n}</option>`).join('');
 $('markT').onchange=e=>markT=e.target.value;
 $('tabs').onclick=e=>{const b=e.target.closest('[data-pg]');if(!b)return;const i=+b.dataset.pg;if(i===P)return pageDlg();processInk();P=i;sel=null;if(tool==='bgadj')tool='mem';ui();fit();};
+/* 지금 색: 톡 = 기둥 [규격▾] · 긋기 = [보|벽|트러스] [규격▾] — 찍기 전에 바로 정함 */
+function curRender(){const c=penColor.toLowerCase(),cp=D.pal.find(x=>x.c.toLowerCase()===c&&x.kind==='col'),lp=D.pal.find(x=>x.c.toLowerCase()===c&&x.kind!=='col'),lk=lp?lp.kind:defKind(c);
+  const opts=(kind,cur)=>`<option value="">${cur?esc(cur):'규격 ▾'}</option>`+specList(kind).map(s=>`<option${s===cur?' selected':''}>${esc(s)}</option>`).join('')+'<option value="__">직접 입력…</option>';
+  $('cur').innerHTML=`<i style="width:14px;height:14px;border-radius:50%;background:${c}"></i><b>톡</b>=기둥<select data-cs="col" style="height:36px;width:104px;${cp&&cp.spec?'':'border:2px solid #e03131'}">${opts('col',cp&&cp.spec)}</select>
+    <b style="margin-left:6px">긋기</b>=${['beam','wall','truss'].map(k=>`<button data-ck="${k}" class="${k===lk?'on':''}" style="height:36px;min-width:40px;padding:0 6px">${KIND[k]}</button>`).join('')}<select data-cs="line" style="height:36px;width:104px;${lp&&lp.spec?'':'border:2px solid #e03131'}">${opts(lk,lp&&lp.spec)}</select>`;}
+$('cur').onchange=e=>{const g=e.target.dataset.cs;if(!g)return;const v=e.target.value,k=penAt(g==='col'?'col':'line');if(v==='__')return penDlg(k.id);if(v){mod();k.spec=v;save();}ui();};
+$('cur').onclick=e=>{const b=e.target.closest('[data-ck]');if(!b)return;mod();const k=penAt('line',b.dataset.ck);k.kind=b.dataset.ck;tool='mem';save();ui();toast(`이 색으로 그으면 ${KIND[k.kind]}`);};
 $('sws').onclick=e=>{const b=e.target.closest('[data-c]');if(b)pickColor(b.dataset.c);};$('cCustom').oninput=e=>pickColor(e.target.value);
 function pickColor(c){processInk();const it=selItem();penColor=c;
   if(tool==='sel'&&it&&(sel.k==='hl'||sel.k==='cols')){mod();it.p=penAt(sel.k==='cols'?'col':'line',pal(it.p).kind).id;penId=it.p;save();return ui();}   /* 고른 부재 색 바꾸기 */
@@ -560,11 +566,11 @@ $('bUndo').onclick=doUndo;$('bFit').onclick=fit;$('bPgSet').onclick=()=>pageDlg(
 $('bUp').onclick=()=>addFloor(true);$('bDn').onclick=()=>addFloor(false);$('bAxis').onclick=()=>axisDlg();
 
 /* 📐 기둥 간격(축선) 입력: 간격 숫자로 기둥·치수선(정확한 값)·보를 한 번에 — 손으로 찍는 것보다 정확 */
-const spans=t=>String(t||'').split(/[\s,]+/).filter(Boolean).flatMap(w=>{const m=w.match(/^([\d.]+)[xX×*](\d+)$/),v=+normVal(m?m[1]:w);return v>0?Array(m?+m[2]:1).fill(v):[];});
+const spans=t=>String(t||'').split(/[\s,\/+]+/).filter(Boolean).flatMap(w=>{const m=w.match(/^([\d.]+)[xX×*](\d+)$/),v=+normVal(m?m[1]:w);return v>0?Array(m?+m[2]:1).fill(v):[];});
 function axisDlg(){const cp=pal(penId).kind==='col'?pal(penId):D.pal.find(k=>k.kind==='col'),bp=D.pal.find(k=>k.kind==='beam'&&k.spec)||D.pal.find(k=>k.kind==='beam'),chk=(id,on,t)=>`<label style="display:flex;gap:8px;align-items:center;color:#1d2733;font-size:14px"><input type="checkbox" id="${id}"${on?' checked':''} style="width:auto;height:auto"> ${t}</label>`;
   openDlg(`<h3>📐 기둥 간격으로 찍기</h3><small>간격을 m 로 (2600 처럼 mm 도 됨), 띄어쓰기나 쉼표로. 같은 간격 반복은 6x3</small>
-    <label>가로 간격 (왼쪽 → 오른쪽)</label><input id="axX" placeholder="예) 6 7.2 7.2" inputmode="decimal">
-    <label>세로 간격 (위 → 아래)</label><input id="axY" placeholder="예) 8 4.5" inputmode="decimal">
+    <label>가로 간격 (왼쪽 → 오른쪽)</label><input id="axX" placeholder="예) 6 7.2 7.2" autocomplete="off">
+    <label>세로 간격 (위 → 아래)</label><input id="axY" placeholder="예) 8 4.5" autocomplete="off">
     ${chk('axC',1,`교차점마다 기둥 (${esc(cp?cp.spec||'규격 없음':'')})`)}${chk('axB',0,`축선 따라 보 (${esc(bp?bp.spec||'규격 없음':'')})`)}${chk('axD',1,'치수선 (정확한 값)')}
     <div class="row"><button id="axOk" class="on">만들기</button></div>`,m=>{const q=s=>m.querySelector(s);
     q('#axOk').onclick=()=>{const X=spans(q('#axX').value),Y=spans(q('#axY').value);if(!X.length&&!Y.length)return toast('간격을 넣어 주세요');
@@ -595,7 +601,9 @@ function menuDlg(){openDlg(`<h3>☰ 메뉴</h3><label>날짜</label><input id="m
 
 /* ── 대화창 ── */
 const dlg=$('dlg');
-function openDlg(html,bind){dlg.onclick=dlg.onchange=null;dlg.innerHTML=html;bind(dlg);if(!dlg.open)dlg.showModal();}
+function openDlg(html,bind){dlg.onclick=dlg.onchange=null;dlg.innerHTML='<button class="dx" style="float:right;height:36px;min-width:36px;margin:-6px -6px 0 6px" title="닫기">✕</button>'+html;
+  dlg.querySelector('.dx').onclick=()=>dlg.close();bind(dlg);if(!dlg.open)dlg.showModal();}
+dlg.addEventListener('pointerdown',e=>{const r=dlg.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dlg.close();});   /* 창 바깥 톡 = 닫기 */
 /* 규격(=색 펜) 고치기 / 추가 — 자주 쓰는 규격 드롭다운, 색은 규격마다 자동, 같은 규격이면 합침 */
 function penDlg(id){const isNew=!id,k=isNew?{id:'p'+Date.now().toString(36),kind:pal(penId).kind,spec:'',c:''}:D.pal.find(p=>p.id===id);let manual=false;
   openDlg(`<h3>${isNew?'＋ 규격 추가':'규격 (색 = 부재)'}</h3><label>부재 종류</label><select id="dK">${Object.entries(KIND).map(([v,n])=>`<option value="${v}"${v===k.kind?' selected':''}>${n}</option>`).join('')}</select>

@@ -586,7 +586,7 @@ $('bUndo').onclick=doUndo;$('bFit').onclick=fit;$('bPgSet').onclick=()=>pageDlg(
 $('bUp').onclick=()=>addFloor(true);$('bDn').onclick=()=>addFloor(false);$('bAxis').onclick=()=>axisDlg();
 
 /* 대충 찍고 나중에 맞추기: 기둥 x(y) 를 줄로 묶음 (0.8 m 안 = 같은 줄) → 줄 사이 경간을 넣으면 그림 전체를 그 치수로 폄 (중간 부재는 비율대로) */
-function colLines(p,k){const T=Math.max(0.8*GRID,24/V.z),v=p.cols.map(c=>k?c.y:c.x).sort((a,b)=>a-b),L=[];   /* ponytail: 고정 0.8 m 묶음 — 1 m 안쪽 경간이 흔하면 줄일 것 */
+function colLines(p,k){const T=0.8*GRID,v=p.cols.map(c=>k?c.y:c.x).sort((a,b)=>a-b),L=[];   /* ponytail: 고정 0.8 m 묶음 — 1 m 안쪽 경간이 흔하면 줄일 것 */
   v.forEach(x=>{const l=L[L.length-1];if(l&&x-l.hi<T){l.hi=x;l.s+=x;l.n++;}else L.push({lo:x,hi:x,s:x,n:1});});
   return L.map(l=>({lo:l.lo,hi:l.hi,m:Math.round(l.s/l.n/4)*4}));}   /* 줄 자리 = 평균 (0.1 m 단위) */
 /* 한 방향 구간별 1차 맞춤: K=[[원래, 새]] — 첫 줄 앞·끝 줄 뒤는 그만큼 평행 이동 */

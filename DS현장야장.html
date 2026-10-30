@@ -57,7 +57,8 @@ dialog small{color:#5b6b80;font-size:12px}
   <div class="sep"></div>
   <button id="bGrid">▦ 모눈</button>
   <button id="bInst" style="display:none">📲 설치</button>
-  <button id="bSave" class="on">💾 저장</button>
+  <button id="bShare" class="on">📤 보내기</button>
+  <button id="bSave">💾 저장</button>
 </div>
 <div id="cbar" class="bar"><div class="crow"><button id="bLeg">📋 범례</button><div class="sep"></div><div id="sws" style="display:flex;gap:6px"></div><input id="cCustom" type="color" title="다른 색" style="width:42px;height:38px;padding:2px;flex:none"></div><div class="crow"><div id="cur" style="display:flex;gap:4px;align-items:center;white-space:nowrap;font-size:13px"></div></div><div class="crow"><div id="tools" style="display:flex;gap:4px"></div><select id="markT" style="display:none"></select><div class="sep"></div><button id="bUndo">↩ 되돌리기</button><button id="bFit">⤢ 맞춤</button></div></div>
 <canvas id="cv"></canvas><div id="leg"></div>
@@ -735,10 +736,17 @@ function checkOut(){const o=[],seen={};D.pages.forEach(p=>{const nm=flLabel(p);i
   D.floors.forEach(f=>{if(!seen[f.n])o.push(`층고표의 ${f.n}: 그린 평면이 없어 DS-PLAN 에 안 들어감`);});
   const el=D.pages.filter(p=>p.type==='elev');if(el.length>1&&el.some(p=>!p.pc))o.push('트러스 입면이 여럿인데 「평면에 그은 색」이 빈 쪽이 있습니다');
   return o;}
-$('bSave').onclick=()=>{processInk();if(edAt)commitEd(false);const w=checkOut();if(w.length&&!confirm('확인할 것:\n · '+w.join('\n · ')+'\n\n그래도 저장할까요?'))return;
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(buildOut())],{type:'application/json'}));
-  a.download=`${(D.site||'현장').replace(/[\\/:*?"<>|]/g,'_')}_${D.date}_현장야장.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-  toast('저장됨 (다운로드 폴더) → DS-PLAN [열기]로 넣으세요');};
+/* 내보내기 준비: 빠진 것 확인 → 파일 이름·내용 */
+function outFile(verb){processInk();if(edAt)commitEd(false);const w=checkOut();if(w.length&&!confirm('확인할 것:\n · '+w.join('\n · ')+`\n\n그래도 ${verb}?`))return null;
+  return{name:`${(D.site||'현장').replace(/[\/:*?"<>|]/g,'_')}_${D.date}_현장야장.json`,json:JSON.stringify(buildOut())};}
+function download(o){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([o.json],{type:'application/json'}));a.download=o.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
+$('bSave').onclick=()=>{const o=outFile('저장할까요');if(!o)return;download(o);toast(`저장됨: ${o.name} — 이 탭의 DS-PLAN 은 [열기] → 최근 파일 맨 위 · PC 로는 📤 보내기`);};
+/* 📤 보내기: 안드로이드 공유 창 (카톡 나에게 · Quick Share 로 PC · 드라이브 · 메일) — json 이 안 되는 기기는 .txt 로 */
+$('bShare').onclick=async()=>{const o=outFile('보낼까요');if(!o)return;
+  for(const[n,t]of[[o.name,'application/json'],[o.name+'.txt','text/plain']]){const f=new File([o.json],n,{type:t});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:o.name});
+      toast(t==='text/plain'?'보냈습니다 (.txt 로 — DS-PLAN [열기]에서 「모든 파일」로 고르거나 이름 끝 .txt 를 지우세요)':'보냈습니다 — 받은 쪽에서 DS-PLAN [열기]로');}catch(e){if(e.name!=='AbortError')toast('보내기 실패: '+e.message);}return;}}
+  download(o);toast('이 기기는 바로 보내기를 못 해서 저장했습니다 (다운로드 폴더)');};
 $('fOpen').onchange=async e=>{const f=e.target.files[0];if(!f)return;let d;try{d=JSON.parse(await f.text());}catch(err){return alert('JSON 을 읽지 못했습니다');}
   if(!d||d.fmt!=='DS-FIELD-1'||!Array.isArray(d.pages)||!d.pages.length)return alert('현장야장 파일(DS-FIELD-1)이 아닙니다 — 지금 그림은 그대로입니다');
   if(!confirm('지금 그림을 이 파일로 바꿀까요? (지금 것은 먼저 저장해 두세요)'))return;

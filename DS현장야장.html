@@ -10,10 +10,11 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI','Pretendard','Malgu
 .bar{position:fixed;left:0;right:0;background:#fff;display:flex;align-items:center;gap:6px;padding:0 8px;overflow-x:auto;z-index:5}
 #top{top:0;height:56px;border-bottom:2px solid #c9d4e0}
 #bot{bottom:0;height:60px;border-top:1px solid #dde4ec}
-#cbar{top:56px;height:50px;border-bottom:1px solid #dde4ec}
+#cbar{top:56px;height:96px;border-bottom:1px solid #dde4ec;flex-direction:column;align-items:stretch;justify-content:center;gap:2px;padding:2px 8px}
+.crow{display:flex;align-items:center;gap:6px;height:44px;overflow-x:auto;flex:none}
 .sw{width:36px;height:36px;min-width:36px;border-radius:50%;padding:0;border:3px solid #fff;box-shadow:0 0 0 1px #aab6c4}
 .sw.on{box-shadow:0 0 0 3px #1d2733}
-#leg{position:fixed;left:0;top:106px;bottom:60px;width:272px;overflow:auto;background:rgba(255,255,255,.96);border-right:2px solid #c9d4e0;z-index:4;padding:8px;font-size:13px;display:none}
+#leg{position:fixed;left:0;top:152px;bottom:60px;width:272px;overflow:auto;background:rgba(255,255,255,.96);border-right:2px solid #c9d4e0;z-index:4;padding:8px;font-size:13px;display:none}
 #leg .lr{display:flex;align-items:center;gap:4px;margin:5px 0}
 #leg .lr i{width:24px;height:24px;border-radius:6px;flex:none}
 #leg input,#leg select{height:36px;font-size:13px;padding:0 4px}
@@ -24,9 +25,9 @@ button.pen i{width:18px;height:18px;border-radius:4px;flex:none}
 button.pen.on{background:#eef2f7;color:#1d2733;border:3px solid #2a4b9d}
 .sep{width:1px;height:34px;background:#c9d4e0;flex:none}
 input,select{font:inherit;font-size:15px;height:40px;border:1px solid #c3cedb;border-radius:8px;padding:0 8px;background:#fff;color:#1d2733}
-#cv{position:fixed;left:0;right:0;top:106px;bottom:60px;width:100%;height:calc(100% - 166px);touch-action:none;background:#fff}
+#cv{position:fixed;left:0;right:0;top:152px;bottom:60px;width:100%;height:calc(100% - 212px);touch-action:none;background:#fff}
 #ed{position:fixed;display:none;width:96px;height:42px;font-size:19px;text-align:center;z-index:9;border:2px solid #2a4b9d}
-#hint{position:fixed;left:10px;top:112px;right:10px;font-size:12.5px;color:#5b6b80;pointer-events:none;z-index:4}
+#hint{position:fixed;left:10px;top:158px;right:10px;font-size:12.5px;color:#5b6b80;pointer-events:none;z-index:4}
 #hint span{background:rgba(255,255,255,.88);padding:2px 6px;border-radius:6px}
 #toast{position:fixed;left:50%;bottom:74px;transform:translateX(-50%);background:#1d2733;color:#fff;padding:9px 18px;border-radius:20px;font-size:14px;display:none;z-index:10;max-width:90%}
 dialog{margin:auto;border:0;border-radius:14px;padding:18px;width:min(400px,94vw);max-height:90vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}
@@ -41,7 +42,7 @@ dialog small{color:#5b6b80;font-size:12px}
 .chk input{width:auto;height:auto}
 #edx{position:fixed;display:none;gap:4px;z-index:9}
 #edx button{height:38px;min-width:46px;padding:0 8px;background:#eef2f7;font-weight:700}
-#selbar{position:fixed;top:112px;right:10px;display:none;align-items:center;gap:6px;z-index:6;background:#fff;border:2px solid #1c7ed6;border-radius:10px;padding:4px 6px 4px 10px;font-size:13.5px;max-width:calc(100% - 20px)}
+#selbar{position:fixed;top:158px;right:10px;display:none;align-items:center;gap:6px;z-index:6;background:#fff;border:2px solid #1c7ed6;border-radius:10px;padding:4px 6px 4px 10px;font-size:13.5px;max-width:calc(100% - 20px)}
 #selbar button{height:38px}
 </style></head><body>
 <div id="top" class="bar">
@@ -59,7 +60,7 @@ dialog small{color:#5b6b80;font-size:12px}
   <button id="bInst" style="display:none">📲 설치</button>
   <button id="bSave" class="on">💾 저장</button>
 </div>
-<div id="cbar" class="bar"><button id="bLeg">📋 범례</button><div class="sep"></div><div id="sws" style="display:flex;gap:6px"></div><input id="cCustom" type="color" title="다른 색" style="width:42px;height:38px;padding:2px;flex:none"><div class="sep"></div><div id="cur" style="display:flex;gap:4px;align-items:center;white-space:nowrap;font-size:13px"></div></div>
+<div id="cbar" class="bar"><div class="crow"><button id="bLeg">📋 범례</button><div class="sep"></div><div id="sws" style="display:flex;gap:6px"></div><input id="cCustom" type="color" title="다른 색" style="width:42px;height:38px;padding:2px;flex:none"></div><div class="crow"><div id="cur" style="display:flex;gap:4px;align-items:center;white-space:nowrap;font-size:13px"></div></div></div>
 <canvas id="cv"></canvas><div id="leg"></div>
 <div id="hint"><span></span></div>
 <button id="bAddPen">＋규격</button></div>
@@ -82,14 +83,14 @@ const KIND={wall:'벽',col:'기둥',beam:'보',truss:'트러스'};
 const SPEC_HINT={beam:'예) 300x600 · H-400x200 · ㄷ150x75',col:'예) 500x400 (가로x세로) · Ø450 (원형) · H-200x200 · □150x6',wall:'두께 mm 예) 200 = 조적 · RC200 = 콘크리트',truss:'예) P-60.5x3.2 · L-50x5'};
 const MARKS=[['SH','슈미트해머'],['FS','페로스캔(철근)'],['SS','부재단면 측정'],['C','탄산화'],['VT','수직기울기'],['P','부동침하'],['L','부재변위'],
   ['CR','손상-균열'],['LK','손상-누수'],['SP','손상-박리'],['RE','손상-철근노출'],['ETC','기타']];
-const TOOLS=[['mem','✏ 부재'],['sel','☝ 선택'],['dim','📏 치수'],['memo','✎ 메모'],['mark','◎ 조사'],['photo','📷 사진'],['del','⌫ 지우개']];
+const TOOLS=[['mem','✏ 부재'],['sel','☝ 선택'],['dim','📏 길이'],['memo','✎ 메모'],['mark','◎ 조사'],['photo','📷 사진'],['del','⌫ 지우개']];
 /* 자주 쓰는 규격 (드롭다운) — 이 현장에서 쓴 규격이 위에 먼저 나옴 */
 const SPECS={col:['400x400','500x500','500x400','400x500','600x600','300x300','Ø400','Ø450','Ø500','H-200x200','H-250x250','H-300x300','□150x150x6','□200x200x8'],
   beam:['300x600','300x500','300x700','350x600','400x600','400x700','250x500','200x400','300x450','H-300x150','H-350x175','H-400x200','H-450x200','H-500x200','ㄷ150x75'],
   wall:['200','100','190','RC150','RC200','RC250','RC300'],truss:['P-48.6x2.3','P-60.5x3.2','P-76.3x3.2','L-50x50x6','L-65x65x6','ㄷ100x50']};
 const KC={wall:['#343a40','#868e96','#795548','#495057'],col:['#e03131','#c2255c','#f76707','#9c36b5','#d6336c'],beam:['#f5c518','#4dabf7','#9775fa','#3bc9db','#ff8787','#69db7c','#a9743b','#2b8a7e','#e599f7','#c9a227'],truss:['#ae3ec9','#7048e8','#1098ad','#0b7285']};
 const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (위에서 보|벽|트러스 · 규격 고름) · 한 획 = 한 직선 부재 · 기둥 규격 다르면 다른 색으로 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
-  dim:'부재 옆에 숫자 쓰기 = 그 길이로 맞춤 · 부재 톡 = 길이 치수(바깥쪽) · 치수 칸에 실측 숫자 → 그림이 그 길이로 늘고 줄어듦 · 회색 ≈ = 그린 크기 · 단위 m (2600 = 2.6) · 숫자 톡 = 고치기',
+  dim:'부재 톡 = 길이 고치기 (그 부재 끝의 기둥 줄이 옮겨짐) · 바깥 치수 숫자 톡 = 그 간격 고치기 · 부재 옆에 숫자를 써도 됨 · 치수는 최외곽에 자동 · 단위 m (6000 = 6)',
   memo:'자유 메모 (실명·Mirror·특기사항 등 — 모델엔 안 들어가고 DS-PLAN 배경 그림으로 감)',mark:'조사 위치 톡 (종류는 오른쪽에서 선택)',photo:'사진 찍을 위치 톡 → 카메라',del:'지울 것을 톡 또는 문지르기',
   sel:'톡 = 선택 → 끌어서 옮기기 · 선 끝 동그라미 끌기 = 늘이기/줄이기 · 아래 색 버튼 = 규격 바꾸기 · 기둥을 옮기면 붙은 선도 따라옴',
   bgadj:'배경 맞추기 — 펜·한 손가락으로 끌기 = 이동 · 두 손가락 = 크기·회전'};
@@ -153,7 +154,7 @@ function render(c,p,z,ox,oy){const u=1/z;c.save();c.translate(ox,oy);c.scale(z,z
     c.fillStyle='rgba(255,255,255,.85)';c.strokeStyle=k.c;c.lineWidth=2.6*u;c.beginPath();
     if(G.circ)c.arc(q.x,q.y,w/2,0,7);else c.rect(q.x-w/2,q.y-h/2,w,h);c.fill();c.stroke();});
   c.font=`bold ${15*u}px sans-serif`;c.textAlign='center';c.textBaseline='middle';
-  p.dims.forEach(d=>{const{hor,P:Q}=dimPts(d);c.strokeStyle='#e03131';c.lineWidth=1.6*u;c.beginPath();c.moveTo(...d.a);c.lineTo(...d.b);
+  p.dims.concat(autoDims(p)).forEach(d=>{const{hor,P:Q}=dimPts(d);c.strokeStyle='#e03131';c.lineWidth=1.6*u;c.beginPath();c.moveTo(...d.a);c.lineTo(...d.b);
     Q.forEach(q=>{if(hor){c.moveTo(q[0],q[1]-7*u);c.lineTo(q[0],q[1]+7*u);}else{c.moveTo(q[0]-7*u,q[1]);c.lineTo(q[0]+7*u,q[1]);}});c.stroke();
     dimLabels(d,z).forEach((L,i)=>{const v=d.v[i],e=d.est&&d.est[i];c.fillStyle=!v?'#e03131':e?'#8a96a6':'#1c4fd6';c.fillText(!v?'?':e?'≈'+v:v,L[0],L[1]);});});   /* 회색 ≈ = 그린 크기로 잰 값 */
   p.marks.forEach(m=>{c.strokeStyle=c.fillStyle='#e8590c';c.lineWidth=2*u;c.beginPath();c.arc(m.x,m.y,8*u,0,7);c.stroke();c.font=`bold ${12*u}px sans-serif`;c.fillText(`${m.t==='SS'?'Ss':m.t==='ETC'?'M':m.t}-${m.no}`,m.x,m.y-16*u);});
@@ -166,7 +167,7 @@ function render(c,p,z,ox,oy){const u=1/z;c.save();c.translate(ox,oy);c.scale(z,z
 function draw(over){g.setTransform(dpr,0,0,dpr,0,0);const W=cv.clientWidth,H=cv.clientHeight;g.fillStyle='#fff';g.fillRect(0,0,W,H);
   bgDraw(g,pg(),V.z,V.ox,V.oy);
   const st=GRID*V.z;if(st>=7){g.strokeStyle=gridSnap?'#c9d4e0':'#e9eef4';g.lineWidth=1;g.beginPath();for(let x=V.ox%st;x<W;x+=st){g.moveTo(x,0);g.lineTo(x,H);}for(let y=V.oy%st;y<H;y+=st){g.moveTo(0,y);g.lineTo(W,y);}g.stroke();}
-  render(g,pg(),V.z,V.ox,V.oy);selDraw();if(!act)hoverDraw();
+  render(g,pg(),V.z,V.ox,V.oy);selDraw();if(!act&&hov){hoverDraw();guideDraw();}
   if(inkBuf.length){g.strokeStyle='#1c7ed6';g.lineWidth=2.4;g.lineCap='round';inkBuf.forEach(s=>{g.beginPath();s.forEach((w,i)=>{const x=w[0]*V.z+V.ox,y=w[1]*V.z+V.oy;i?g.lineTo(x,y):g.moveTo(x,y);});if(s.length===1)g.lineTo(s[0][0]*V.z+V.ox+.5,s[0][1]*V.z+V.oy);g.stroke();});}
   if(over)over();}
 
@@ -189,9 +190,17 @@ function rdp(pts,eps){if(pts.length<3)return pts;const a=pts[0],b=pts[pts.length
   return md<eps?[a,b]:rdp(pts.slice(0,mi+1),eps).slice(0,-1).concat(rdp(pts.slice(mi),eps));}
 /* 한 획 → 꺾인 곳마다 직선 (가로/세로는 곧게, 끝은 기둥·선 끝에 붙임) */
 /* 다른 기둥·선 끝과 가로/세로 줄 맞춤 */
-function alignSnap(q,p,tol){let x=q[0],y=q[1],bx=tol,by=tol;nodes(p).forEach(n=>{const dx=Math.abs(n[0]-q[0]),dy=Math.abs(n[1]-q[1]);if(dx<bx){bx=dx;x=n[0];}if(dy<by){by=dy;y=n[1];}});return[x,y];}
+/* 캐드처럼 추적: 펜을 대 본 기둥·끝점(최근 3개)은 넓게, 다른 점은 좁게 가로·세로 줄을 맞춤 → 안내선 */
+let trk=[],ALN={x:null,y:null},ALP=null;
+function trackHover(q){const n=nodes(pg()).find(n=>Math.hypot(n[0]-q[0],n[1]-q[1])<14/V.z);if(n&&!trk.some(m=>m[0]===n[0]&&m[1]===n[1])){trk.push([n[0],n[1]]);if(trk.length>3)trk.shift();}}
+function alignSnap(q,p,tol){let x=q[0],y=q[1],bx=1e9,by=1e9;ALN={x:null,y:null};
+  const test=(n,lim)=>{const dx=Math.abs(n[0]-q[0]),dy=Math.abs(n[1]-q[1]);if(dx<lim&&dx<bx){bx=dx;x=n[0];ALN.x=n;}if(dy<lim&&dy<by){by=dy;y=n[1];ALN.y=n;}};
+  trk.forEach(n=>test(n,SNAP*1.3/V.z));nodes(p).forEach(n=>test(n,tol));ALP=[x,y];return[x,y];}
+function guideDraw(){if(tool!=='mem')return;const S=w=>[w[0]*V.z+V.ox,w[1]*V.z+V.oy];g.save();g.strokeStyle='rgba(28,126,214,.85)';g.lineWidth=1.3;
+  trk.forEach(n=>{const s=S(n);g.beginPath();g.moveTo(s[0]-5,s[1]-5);g.lineTo(s[0]+5,s[1]+5);g.moveTo(s[0]+5,s[1]-5);g.lineTo(s[0]-5,s[1]+5);g.stroke();});   /* 잡힌 점 × */
+  if(ALP){g.setLineDash([6,4]);const e=S(ALP);[ALN.x,ALN.y].forEach(n=>{if(!n)return;const s=S(n);g.beginPath();g.moveTo(...s);g.lineTo(...e);g.stroke();});}g.restore();}
 /* 한 점 맞춤: 기둥·선 끝 → 선 위 → 모눈 → 줄 맞춤. 반환 [점, 종류] */
-function snapPt(q,p,tol){let n=snapNode(q,p,tol);if(n)return[n,'node'];n=snapMid(q,p,tol*0.8);if(n)return[n,'mid'];n=snapSeg(q,p,tol*0.7);if(n)return[n,'seg'];return[alignSnap(gs(q),p,tol*0.45),gridSnap?'grid':'free'];}
+function snapPt(q,p,tol){ALN={x:null,y:null};ALP=null;let n=snapNode(q,p,tol);if(n)return[n,'node'];n=snapMid(q,p,tol*0.8);if(n)return[n,'mid'];n=snapSeg(q,p,tol*0.7);if(n)return[n,'seg'];return[alignSnap(gs(q),p,tol*0.45),gridSnap?'grid':'free'];}
 const SNAP=30;   /* 화면 px — 이 안이면 붙음 */
 /* 한 획 → 꺾인 곳마다 직선 (가로/세로는 곧게, 끝은 기둥·선 끝에 붙임) — 그리는 중 미리보기에도 씀 */
 
@@ -200,7 +209,7 @@ function polySegs(pts){const p=pg(),tol=SNAP/V.z,v=[pts[0],pts[pts.length-1]],se
   for(let i=1;i<v.length;i++){let b=v[i];const dx=b[0]-a[0],dy=b[1]-a[1],hor=Math.abs(dy)<Math.abs(dx)*0.22,ver=Math.abs(dx)<Math.abs(dy)*0.22;   /* 약 12° 안쪽이면 곧게 */
     b=gs(b);if(hor)b=[b[0],a[1]];else if(ver)b=[a[0],b[1]];
     const nb=snapNode(b,p,tol)||snapMid(b,p,tol*0.8)||snapSeg(b,p,tol*0.7);
-    if(nb)b=p.type==='plan'&&hor?[nb[0],a[1]]:p.type==='plan'&&ver?[a[0],nb[1]]:nb;   /* 평면은 곧게 우선, 트러스 입면은 절점 잇기 우선 */
+    if(nb){ALN={x:null,y:null};ALP=null;}if(nb)b=p.type==='plan'&&hor?[nb[0],a[1]]:p.type==='plan'&&ver?[a[0],nb[1]]:nb;   /* 평면은 곧게 우선, 트러스 입면은 절점 잇기 우선 */
     else{const al=alignSnap(b,p,tol*0.45);b=hor?[al[0],a[1]]:ver?[a[0],al[1]]:al;}
     if(Math.hypot(b[0]-a[0],b[1]-a[1])<tol*0.6)continue;segs.push([a.map(r1),b.map(r1)]);a=b;}
   return segs;}
@@ -245,44 +254,33 @@ function mkCol(q){const p=pg(),tol=24/V.z,hit=p.cols.find(c=>Math.hypot(c.x-q[0]
   if(hit){mod();if(hit.p!==penId)hit.p=penId;else hit.r=hit.r?0:1;return;}   /* 찍힌 기둥 톡 = 90° 돌림 (다른 기둥 색이면 종류만 바꿈) */
   q=colSnap(q,p,p.cols,tol);mod();p.cols.push({p:penId,x:r1(q[0]),y:r1(q[1])});}
 /* 기둥 자리: 기둥·선 끝 → 모눈 → 다른 기둥과 줄 맞춤 */
-function colSnap(q,p,cols,tol){const n=snapNode(q,p,tol);if(n)return n;if(gridSnap)return gs(q);
-  let bx=tol,by=tol;const o=q.slice();q=q.slice();cols.forEach(c=>{if(Math.abs(c.x-o[0])<bx){bx=Math.abs(c.x-o[0]);q[0]=c.x;}if(Math.abs(c.y-o[1])<by){by=Math.abs(c.y-o[1]);q[1]=c.y;}});return q;}
-function mkDim(a,b,endsOnly){const p=pg(),tol=24/V.z,hor=Math.abs(b[0]-a[0])>=Math.abs(b[1]-a[1]),k=hor?0:1;
-  const cand=(p.type==='plan'?nodes({cols:p.cols,hl:p.hl.filter(s=>pal(s.p).kind!=='truss')}):nodes(p)).map(n=>n[k]);   /* 평면: 트러스 선은 축선이 아님 */
-  const sn=v=>{let r=gridSnap?Math.round(v/20)*20:v,bd=tol;cand.forEach(c=>{if(Math.abs(c-v)<bd){bd=Math.abs(c-v);r=c;}});return r;};
-  let c0=sn(a[k]),c1=sn(b[k]);if(c0>c1)[c0,c1]=[c1,c0];if(c1-c0<20)return toast('치수선이 너무 짧습니다');
-  const ps=[c0,c1];if(!endsOnly)cand.forEach(c=>{if(c>c0+10&&c<c1-10&&!ps.some(x=>Math.abs(x-c)<=10))ps.push(c);});ps.sort((x,y)=>x-y);   /* DS-PLAN 은 10 이내 눈금을 한 점으로 봄 */
-  const off=r1(gs(a)[hor?1:0]),d={a:hor?[r1(c0),off]:[off,r1(c0)],b:hor?[r1(c1),off]:[off,r1(c1)],t:ps.map(c=>(c-c0)/(c1-c0)),v:[],est:[]};
-  for(let i=0;i+1<ps.length;i++)estGap(d,i);   /* 그린 크기로 잰 값 (회색 ≈) */
-  mod();p.dims.push(d);toast('회색 ≈숫자는 그린 크기로 잰 값 — 실측값을 옆에 쓰세요 (m, mm 도 됨)');return true;}
-/* 치수 숫자 → 그림 맞춤: 칸 i 를 적은 길이로. 칸 너머는 그만큼 밀고, 칸 안쪽은 비율대로 늘림 (그 쪽의 기둥·선·치수·메모·표시 전부) */
-let dimDrive=(()=>{try{return localStorage.getItem('ds_field_drive')!=='0';}catch(e){return true;}})();
-function stretchGap(p,d,i){const v=parseFloat(d.v[i]);if(!dimDrive||!(v>0)||(d.est&&d.est[i]))return;const{hor,P:Q}=dimPts(d),k=hor?0:1,c0=Math.min(Q[i][k],Q[i+1][k]),c1=Math.max(Q[i][k],Q[i+1][k]),cur=c1-c0,tg=v*GRID;
-  if(cur<1||Math.abs(tg-cur)<0.5)return;const f=x=>x<=c0+0.5?x:x>=c1-0.5?x+tg-cur:c0+(x-c0)*tg/cur,F=q=>{q[k]=r1(f(q[k]));},FO=o=>{const q=[o.x,o.y];F(q);o.x=q[0];o.y=q[1];};
-  p.cols.forEach(FO);p.marks.forEach(FO);p.photos.forEach(FO);p.hl.forEach(s=>s.pts.forEach(F));p.pen.forEach(s=>s.pts.forEach(F));
-  p.dims.forEach(o=>{const{hor:h2,P:T}=dimPts(o);if(h2!==hor){F(o.a);F(o.b);return;}T.forEach(F);const a=T[0][k],b=T[T.length-1][k];o.a[k]=a;o.b[k]=b;o.t=T.map(z=>(z[k]-a)/((b-a)||1));});
-  p.dims.forEach(o=>(o.est||[]).forEach((x,j)=>{if(x)estGap(o,j);}));MKV++;}
-/* 칸 i 를 그린 길이로 채움 (모눈 1칸 = 1 m, 0.1 m 단위) */
-function estGap(d,i){const{P:Q}=dimPts(d),m=lenM(Q[i],Q[i+1]);d.v[i]=m>=0.05?String(Math.round(m*10)/10):'';(d.est=d.est||[])[i]=1;}
-/* 부재 톡 → 그 부재 옆에 치수선 (가로 부재는 위, 세로 부재는 왼쪽) */
-function memberDim(q,s){const p=pg();s=s||p.hl.find(h=>segDist(q,h.pts[0],h.pts[1])<20/V.z);if(!s)return false;
-  const[a,b]=s.pts,dx=b[0]-a[0],dy=b[1]-a[1],G=30;   /* 바깥쪽: 구조물 테두리 밖, 이미 치수가 있으면 그 바깥 */
-  const B=bounds({cols:p.cols,hl:p.hl,dims:[],pen:[],marks:[],photos:[]}),ds=k=>p.dims.filter(d=>dimPts(d).hor===(k===0));
-  if(Math.abs(dy)<=Math.abs(dx)*0.22){const top=a[1]<=(B[1]+B[3])/2,ys=ds(0).map(d=>d.a[1]).filter(y=>top?y<B[1]:y>B[3]),y=top?Math.min(B[1],...ys)-G:Math.max(B[3],...ys)+G;
-    return mkDim([Math.min(a[0],b[0]),y],[Math.max(a[0],b[0]),y],true);}
-  if(Math.abs(dx)<=Math.abs(dy)*0.22){const lf=a[0]<=(B[0]+B[2])/2,xs=ds(1).map(d=>d.a[0]).filter(x=>lf?x<B[0]:x>B[2]),x=lf?Math.min(B[0],...xs)-G:Math.max(B[2],...xs)+G;
-    return mkDim([x,Math.min(a[1],b[1])],[x,Math.max(a[1],b[1])],true);}
-  toast('가로·세로 부재만 자동 치수가 됩니다');return false;}
+function colSnap(q,p,cols,tol){const n=snapNode(q,p,tol);if(n){ALN={x:null,y:null};ALP=null;return n;}return alignSnap(gs(q),p,tol);}
+
+
+
+
+/* 최외곽 자동 치수: 기둥·부재 끝 자리마다 눈금(경간) + 전체 길이 — 값 = 그림 길이 (부재 톡 → 길이 고치면 따라 바뀜) */
+const fmtM=m=>String(Math.round(m*100)/100);
+function autoAxes(p){const N=nodes({cols:p.cols,hl:p.type==='plan'?p.hl.filter(s=>pal(s.p).kind!=='truss'):p.hl}),u=a=>{a.sort((x,y)=>x-y);const o=[];a.forEach(v=>{if(!o.length||v-o[o.length-1]>10)o.push(v);});return o;};
+  return{xs:u(N.map(n=>n[0])),ys:u(N.map(n=>n[1]))};}
+function autoDims(p){if(p.type==='memo')return[];const{xs,ys}=autoAxes(p),out=[];if(!xs.length)return out;
+  const mk=(hor,cs,off)=>{if(cs.length<2)return;const c0=cs[0],c1=cs[cs.length-1];out.push({a:hor?[c0,off]:[off,c0],b:hor?[c1,off]:[off,c1],t:cs.map(c=>(c-c0)/(c1-c0)),v:cs.slice(1).map((c,i)=>fmtM((c-cs[i])/GRID)),auto:1});};
+  mk(true,xs,ys[0]-36);if(xs.length>2)mk(true,[xs[0],xs[xs.length-1]],ys[0]-66);mk(false,ys,xs[0]-36);if(ys.length>2)mk(false,[ys[0],ys[ys.length-1]],xs[0]-66);return out;}
+/* 부재 길이 고치기: 오른쪽(아래쪽) 끝이 있는 줄(같은 x 또는 y)을 통째로 옮김 — 나머지는 그대로 */
+function moveLine(p,k,from,to){const F=q=>{if(Math.abs(q[k]-from)<0.6)q[k]=to;},FO=o=>{const q=[o.x,o.y];F(q);o.x=q[0];o.y=q[1];};p.cols.forEach(FO);p.marks.forEach(FO);p.photos.forEach(FO);p.hl.forEach(h=>h.pts.forEach(F));MKV++;}
+function setLen(p,s,m){const[a,b]=s.pts,dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy),tg=m*GRID;if(!(m>0)||L<1)return false;mod();
+  if(Math.abs(dy)<0.6)moveLine(p,0,Math.max(a[0],b[0]),r1(Math.min(a[0],b[0])+tg));
+  else if(Math.abs(dx)<0.6)moveLine(p,1,Math.max(a[1],b[1]),r1(Math.min(a[1],b[1])+tg));
+  else{const o=b.slice(),nb=[r1(a[0]+dx/L*tg),r1(a[1]+dy/L*tg)],at=q=>Math.hypot(q[0]-o[0],q[1]-o[1])<0.6;p.cols.forEach(c=>{if(at([c.x,c.y])){c.x=nb[0];c.y=nb[1];}});p.hl.forEach(h=>h.pts.forEach(q=>{if(at(q)){q[0]=nb[0];q[1]=nb[1];}}));}
+  s.L=1;MKV++;save();return true;}
+function editAt(E,w,val){const r=cv.getBoundingClientRect();edAt=E;ed.style.left=Math.max(4,Math.min(innerWidth-100,r.left+w[0]*V.z+V.ox-48))+'px';ed.style.top=Math.max(60,r.top+w[1]*V.z+V.oy-21)+'px';
+  ed.value=val;ed.placeholder='m';ed.style.display='block';$('edx').style.display='none';ed.focus();ed.select();draw();return true;}
+/* 📏 톡: 예전 손 치수 숫자 → 고치기 / 바깥 자동 치수 숫자 → 그 간격 / 부재 → 그 부재 길이 */
 function dimTap(q){const p=pg(),tol=20/V.z;
-  for(const d of p.dims){const{P:Q}=dimPts(d),j=Q.findIndex((z,i)=>i>0&&i<Q.length-1&&Math.hypot(z[0]-q[0],z[1]-q[1])<tol*0.5);   /* 안쪽 눈금 톡 = 눈금 없앰 */
-    if(j>0){const e=d.est||[],v1=d.v[j-1],v2=d.v[j],real=v1&&v2&&!e[j-1]&&!e[j];mod();d.t.splice(j,1);d.v.splice(j-1,2,'');(d.est=e).splice(j-1,2,0);
-      if(real)d.v[j-1]=String(Math.round((+v1+ +v2)*1000)/1000);else estGap(d,j-1);delete d.ink;save();draw();return editLabel(d,j-1);}}   /* 실측 두 칸 = 합 */
   for(const d of p.dims){const i=dimLabels(d,V.z).findIndex(L=>Math.hypot(L[0]-q[0],L[1]-q[1])<tol);if(i>=0)return editLabel(d,i);}
-  for(const d of p.dims){if(segDist(q,d.a,d.b)>tol)continue;const{hor}=dimPts(d),k=hor?0:1,L=d.b[k]-d.a[k];let t=(q[k]-d.a[k])/L;
-    const c=snapNode(q,p,tol);if(c)t=(c[k]-d.a[k])/L;
-    const i=d.t.findIndex(x=>x>t);if(i<=0||(t-d.t[i-1])*L<=10||(d.t[i]-t)*L<=10)return;
-    mod();d.t.splice(i,0,t);d.v.splice(i-1,1,'','');(d.est=d.est||[]).splice(i-1,1,0,0);estGap(d,i-1);estGap(d,i);delete d.ink;save();draw();return true;}
-  return memberDim(q);}
+  for(const d of autoDims(p)){const Ls=dimLabels(d,V.z),i=Ls.findIndex(L=>Math.hypot(L[0]-q[0],L[1]-q[1])<tol);if(i>=0){const{hor,P:Q}=dimPts(d),k=hor?0:1;return editAt({ax:{k,c0:Q[i][k],c1:Q[i+1][k]}},Ls[i],d.v[i]);}}
+  const s=p.hl.find(h=>segDist(q,h.pts[0],h.pts[1])<tol);if(s)return editAt({s},[(s.pts[0][0]+s.pts[1][0])/2,(s.pts[0][1]+s.pts[1][1])/2],fmtM(lenM(s.pts[0],s.pts[1])));
+  return false;}
 function nextNo(arr,f){let n=0;D.pages.forEach(p=>(p[arr]||[]).forEach(m=>{if(f(m))n=Math.max(n,m.no);}));return n+1;}
 function erase(q){const p=pg(),tol=22/V.z,hit=(arr,f)=>{const i=arr.findIndex(f);if(i<0)return false;mod();arr.splice(i,1);return true;};
   return hit(p.marks,m=>Math.hypot(m.x-q[0],m.y-q[1])<tol)||hit(p.photos,m=>Math.hypot(m.x-q[0],m.y-q[1])<tol)||hit(p.cols,c=>Math.hypot(c.x-q[0],c.y-q[1])<tol)||
@@ -330,11 +328,11 @@ function selbar(){const e=$('selbar'),it=selItem();
   const nm={dims:'치수선',marks:'조사 표시',photos:'사진',pen:'메모'}[sel.k];
   const spec=sel.k==='hl'||sel.k==='cols'?`<select data-sb="spec" style="height:38px;max-width:190px">${(sel.k==='cols'?['col']:['wall','beam','truss']).map(kd=>`<optgroup label="${KIND[kd]}">`+
     specList(kd).concat(D.pal.some(k=>k.kind===kd&&!k.spec)?['']:[]).map(s=>{const k=D.pal.find(x=>x.kind===kd&&x.spec===s);return`<option value="${esc(kd+'|'+s)}"${k&&k.id===it.p?' selected':''}>${KIND[kd]} ${esc(s||'(규격 없음)')}</option>`;}).join('')+'</optgroup>').join('')}</select>`:'';   /* 규격 바꾸면 색도 그 규격 색으로 */
-  e.innerHTML=`<span>선택${nm?': <b>'+nm+'</b>':''}</span>${spec}${sel.k==='hl'?'<button data-sb="dim">📏 치수</button>':''}${sel.k==='cols'?'<button data-sb="rot">↻ 90°</button>':''}<button data-sb="del" style="color:#c0392b">🗑</button><button data-sb="x">✕</button>`;e.style.display='flex';}
-$('selbar').onchange=e=>{if(e.target.dataset.sb!=='spec'||!selItem())return;const[kd,s]=e.target.value.split('|');mod();const k=penFor(kd,s);selItem().p=k.id;penId=k.id;save();ui();};
+  e.innerHTML=`<span>선택${nm?': <b>'+nm+'</b>':''}</span>${spec}${sel.k==='hl'?`<input data-sb="len" value="${fmtM(lenM(it.pts[0],it.pts[1]))}" inputmode="decimal" style="width:66px;height:38px;text-align:center">m`:''}${sel.k==='cols'?'<button data-sb="rot">↻ 90°</button>':''}<button data-sb="del" style="color:#c0392b">🗑</button><button data-sb="x">✕</button>`;e.style.display='flex';}
+$('selbar').onchange=e=>{if(e.target.dataset.sb==='len'&&selItem()){const v=normVal(e.target.value);if(v)setLen(pg(),selItem(),+v);return ui();}if(e.target.dataset.sb!=='spec'||!selItem())return;const[kd,s]=e.target.value.split('|');mod();const k=penFor(kd,s);selItem().p=k.id;penId=k.id;save();ui();};
 $('selbar').onclick=e=>{const a=e.target.closest('[data-sb]');if(!a)return;const s=a.dataset.sb,p=pg();
   if(s==='bgok'){tool='mem';save();return ui();}
-  if(s==='spec')return;if(s==='dim'&&selItem()){memberDim(null,selItem());save();return ui();}
+  if(s==='spec'||s==='len')return;
   if(s==='x')sel=null;else if(s==='del'&&selItem()){mod();p[sel.k].splice(sel.i,1);sel=null;save();}else if(s==='rot'&&selItem()){mod();selItem().r=selItem().r?0:1;save();}ui();};
 addEventListener('keydown',e=>{if((e.key==='Delete'||e.key==='Backspace')&&tool==='sel'&&selItem()&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){mod();pg()[sel.k].splice(sel.i,1);sel=null;save();ui();}});
 const normVal=s=>{let n=parseFloat(String(s).replace(',','.'));if(!(n>0))return'';if(n>100)n/=1000;return String(Math.round(n*1000)/1000);};   /* 6000 처럼 mm 로 적어도 m 로 */
@@ -415,11 +413,11 @@ function processInk(){clearTimeout(inkT);inkT=null;const S=inkBuf;inkBuf=[];if(!
     if(gx<hh*1.2&&gy<hh*0.8){c.push(s);return;}}cl.push([s]);});
   mod();const msg=[];
   cl.forEach(ss=>{const b=bbox(ss),q=[(b.x0+b.x1)/2,(b.y0+b.y1)/2];let best=null,bd=Math.max(80/V.z,b.h*3);
-    p.dims.forEach(d=>{const{P:Q}=dimPts(d);for(let i=0;i+1<Q.length;i++){const dd=segDist(q,Q[i],Q[i+1]);if(dd<bd){bd=dd;best={d,i};}}});
+    p.dims.concat(autoDims(p)).forEach(d=>{const{P:Q}=dimPts(d);for(let i=0;i+1<Q.length;i++){const dd=segDist(q,Q[i],Q[i+1]);if(dd<bd){bd=dd;best={d,i};}}});
     const txt=hwRead(ss),v=normVal(txt);
-    if(best&&v){best.d.v[best.i]=v;if(best.d.est)best.d.est[best.i]=0;(best.d.ink=best.d.ink||{})[best.i]=ss;stretchGap(p,best.d,best.i);msg.push(txt!==v?`${txt} → ${v} m`:v+' m');}
-    else if(v&&(()=>{const s=p.hl.find(h=>segDist(q,h.pts[0],h.pts[1])<Math.max(70/V.z,b.h*2.5));if(!s||!memberDim(null,s))return false;   /* 부재 옆에 쓴 숫자 = 그 부재 길이 */
-      const nd=p.dims[p.dims.length-1];nd.v[0]=v;nd.est[0]=0;(nd.ink={})[0]=ss;stretchGap(p,nd,0);msg.push(`부재 길이 ${v} m`);return true;})()){}
+    if(best&&v&&best.d.auto){const{hor,P:Q}=dimPts(best.d),k=hor?0:1;moveLine(p,k,Q[best.i+1][k],r1(Q[best.i][k]+(+v)*GRID));msg.push(`간격 ${v} m`);}   /* 바깥 자동 치수 옆 = 그 간격 */
+    else if(best&&v){best.d.v[best.i]=v;if(best.d.est)best.d.est[best.i]=0;(best.d.ink=best.d.ink||{})[best.i]=ss;msg.push(txt!==v?`${txt} → ${v} m`:v+' m');}
+    else if(v&&(()=>{const s=p.hl.find(h=>segDist(q,h.pts[0],h.pts[1])<Math.max(70/V.z,b.h*2.5));if(!s)return false;setLen(p,s,+v);msg.push(`부재 길이 ${v} m`);return true;})()){}   /* 부재 옆에 쓴 숫자 = 그 부재 길이 */
     else{ss.forEach(s=>p.pen.push({c:'#222',pts:s}));if(best)msg.push('못 읽음(메모로 둠)');}});
   save();draw();if(msg.length)toast('인식 → '+msg.join(' , ')+'   틀리면 숫자 톡');}
 
@@ -433,12 +431,14 @@ function editLabel(d,i){const L=dimLabels(d,V.z)[i],r=cv.getBoundingClientRect()
 function edHide(){edAt=null;ed.style.display='none';$('edx').style.display='none';}
 /* 지금 칸 값을 오른쪽(아래쪽)으로 n칸 같이 채움 — 4.5 / 4.5 / 4.5 */
 function repeatEd(n){if(!edAt)return;const{d,i}=edAt,v=normVal(ed.value)||d.v[i];if(!v)return toast('먼저 숫자를 쓰세요');edHide();
-  const m=Math.min(n,d.v.length-i);mod();for(let k=i;k<i+m;k++){d.v[k]=v;if(d.est)d.est[k]=0;if(d.ink)delete d.ink[k];stretchGap(pg(),d,k);}save();draw();toast(`${v} m × ${m}칸`);}
+  const m=Math.min(n,d.v.length-i);mod();for(let k=i;k<i+m;k++){d.v[k]=v;if(d.est)d.est[k]=0;if(d.ink)delete d.ink[k];}save();draw();toast(`${v} m × ${m}칸`);}
 $('edx').onpointerdown=e=>{const b=e.target.closest('[data-rep]');if(!b)return;e.preventDefault();repeatEd(+b.dataset.rep);};   /* 입력칸 포커스 유지 */
-function commitEd(next){if(!edAt)return;const rp=ed.value.match(/^\s*([\d.,]+)\s*[xX×*]\s*(\d+)\s*$/);if(rp){ed.value=rp[1];return repeatEd(+rp[2]);}   /* 4.5x3 도 됨 */
+function commitEd(next){if(!edAt)return;if(edAt.s||edAt.ax){const E=edAt,raw=ed.value.trim(),v=normVal(raw);edHide();if(raw&&!v)return toast('숫자를 못 읽었습니다 — 예) 6 또는 6000');if(!v)return draw();
+    if(E.s)setLen(pg(),E.s,+v);else{mod();moveLine(pg(),E.ax.k,E.ax.c1,r1(E.ax.c0+(+v)*GRID));save();}if(parseFloat(raw.replace(',','.'))>100)toast(`${raw} mm → ${v} m`);return ui();}   /* 부재 길이 · 바깥 치수 간격 */
+  const rp=ed.value.match(/^\s*([\d.,]+)\s*[xX×*]\s*(\d+)\s*$/);if(rp){ed.value=rp[1];return repeatEd(+rp[2]);}   /* 4.5x3 도 됨 */
   const{d,i}=edAt;edHide();const raw=ed.value.trim(),v=normVal(raw);
   if(raw&&!v)toast('숫자를 못 읽었습니다 — 예) 2.6 또는 2600');else if(v&&parseFloat(raw.replace(',','.'))>100)toast(`${raw} mm → ${v} m`);   /* 단위: m, 100 넘으면 mm 로 봄 */
-  if(v!==d.v[i]||(d.est&&d.est[i])){mod();if(d.ink&&d.ink[i]&&v){const n=hwLearn(d.ink[i],raw)||hwLearn(d.ink[i],v);if(n)toast('고친 숫자를 내 글씨로 학습했습니다');}if(d.ink)delete d.ink[i];if(d.est)d.est[i]=0;d.v[i]=v;stretchGap(pg(),d,i);save();}draw();
+  if(v!==d.v[i]||(d.est&&d.est[i])){mod();if(d.ink&&d.ink[i]&&v){const n=hwLearn(d.ink[i],raw)||hwLearn(d.ink[i],v);if(n)toast('고친 숫자를 내 글씨로 학습했습니다');}if(d.ink)delete d.ink[i];if(d.est)d.est[i]=0;d.v[i]=v;save();}draw();
   if(next){const j=d.v.findIndex((x,k)=>k>i&&x==='');if(j>=0)editLabel(d,j);}}
 ed.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();commitEd(true);}else if(e.key==='Escape')edHide();};
 ed.onblur=()=>commitEd(false);
@@ -456,7 +456,7 @@ cv.onpointerdown=e=>{if(edAt)commitEd(false);try{cv.setPointerCapture(e.pointerI
   const er=e.pointerType==='pen'&&(e.button===2||e.button===5||(e.buttons&34));if(e.button>0&&!er)return;hov=null;   /* S펜 옆 버튼 누른 채 = 지우개 */
   act={id:e.pointerId,pen:e.pointerType==='pen',s,a:toW(...s),pts:[toW(...s)]};if(er){act.tool0=tool;tool='del';}touches.clear();startAct();};
 cv.oncontextmenu=e=>e.preventDefault();
-cv.onpointerleave=e=>{if(hov){hov=null;draw();}};
+cv.onpointerleave=e=>{if(hov){hov=null;ALP=null;draw();}};
 /* S펜을 화면 가까이 대면(호버) 붙을 자리 미리 보여줌 */
 let hov=null;
 function hoverDraw(){if(!hov||['memo','photo','mark','bgadj'].includes(tool))return;const[q,kind]=snapPt(hov,pg(),SNAP/V.z),S=w=>[w[0]*V.z+V.ox,w[1]*V.z+V.oy],r=S(hov),s=S(q);
@@ -481,7 +481,7 @@ cv.onpointermove=e=>{const s=[e.offsetX,e.offsetY];
       if(tool==='bgadj'&&pg().bg)bgGesture(pg().bg,st,k);
       else{const z=Math.max(.1,Math.min(30,V.z*k)),kk=z/V.z;V.ox=st.m[0]-(gPrev.m[0]-V.ox)*kk;V.oy=st.m[1]-(gPrev.m[1]-V.oy)*kk;V.z=z;draw();}}
     gPrev=st;return;}
-  if(!act||act.id!==e.pointerId){if(!act&&e.pointerType!=='touch'){hov=toW(...s);draw();}return;}
+  if(!act||act.id!==e.pointerId){if(!act&&e.pointerType!=='touch'){hov=toW(...s);if(tool==='mem')trackHover(hov);draw();}return;}
   if(touches.size>1){act=null;return;}   /* 손가락 그리기 중 두 손가락 = 확대로 전환 */
   const ce=e.getCoalescedEvents?e.getCoalescedEvents():[];(ce.length?ce:[e]).forEach(c=>act.pts.push(toW(c.offsetX,c.offsetY)));act.e=s;
   const q=act.pts[act.pts.length-1];
@@ -491,23 +491,17 @@ cv.onpointermove=e=>{const s=[e.offsetX,e.offsetY];
   draw(()=>{g.lineCap='round';const path=col=>{g.strokeStyle=col;g.beginPath();act.pts.forEach((w,i)=>{const x=w[0]*V.z+V.ox,y=w[1]*V.z+V.oy;i?g.lineTo(x,y):g.moveTo(x,y);});g.stroke();};
     const S=w=>[w[0]*V.z+V.ox,w[1]*V.z+V.oy];
     if(tool==='memo'){g.lineWidth=2;path('#222');}
-    else if(tool==='dim'){g.lineWidth=2.4;path('#1c7ed6');const ch=Math.hypot(q[0]-act.a[0],q[1]-act.a[1]);if(ch*V.z>=40){const hor=Math.abs(q[0]-act.a[0])>=Math.abs(q[1]-act.a[1]);lenLabel(`${(Math.abs(hor?q[0]-act.a[0]:q[1]-act.a[1])/GRID).toFixed(1)} m`,...s);}}
+    else if(tool==='dim'){g.lineWidth=2.4;path('#1c7ed6');}
     else if(tool==='mem'){g.lineWidth=3;g.globalAlpha=.25;path(penColor);g.globalAlpha=1;   /* 실제로 들어갈 곧은 선 + 길이 */
       const sg=polySegs(act.pts);g.strokeStyle=penColor;g.lineWidth=7;g.globalAlpha=.85;g.beginPath();sg.forEach(([a,b])=>{g.moveTo(...S(a));g.lineTo(...S(b));});g.stroke();g.globalAlpha=1;
-      const l=sg[sg.length-1];if(l){g.fillStyle='#1c7ed6';sg.forEach(([a,b])=>[a,b].forEach(w=>{const c=S(w);g.fillRect(c[0]-3,c[1]-3,6,6);}));lenLabel(`${lenM(l[0],l[1]).toFixed(1)} m`,...s);}}});};
+      const l=sg[sg.length-1];if(l){g.fillStyle='#1c7ed6';sg.forEach(([a,b])=>[a,b].forEach(w=>{const c=S(w);g.fillRect(c[0]-3,c[1]-3,6,6);}));lenLabel(`${lenM(l[0],l[1]).toFixed(1)} m`,...s);guideDraw();}}});};
 cv.onpointerup=cv.onpointercancel=e=>{if(touches.has(e.pointerId)){touches.delete(e.pointerId);gPrev=null;if(!touches.size&&gBg){gBg=0;save();}}
   if(!act||act.id!==e.pointerId)return;const a=act;act=null;
   if(a.tool0){tool=a.tool0;save();return ui();}   /* S펜 옆 버튼 지우개 끝 → 원래 도구 */
   if(e.type==='pointercancel'){draw();return;}
   const b=a.pts[a.pts.length-1],tap=a.pts.every(q=>Math.hypot(q[0]-a.a[0],q[1]-a.a[1])*V.z<8),k=pal(penId).kind;   /* 톡 = 펜이 거의 안 움직임 (0·8 처럼 제자리로 돌아오는 획은 톡 아님) */
   if(tool==='mem'){if(tap){penId=penAt('col').id;mkCol(a.a);}else{penId=penAt('line').id;mkPoly(a.pts);}}
-  else if(tool==='dim'){let len=0;for(let i=1;i<a.pts.length;i++)len+=Math.hypot(a.pts[i][0]-a.pts[i-1][0],a.pts[i][1]-a.pts[i-1][1]);
-    const ch=Math.hypot(b[0]-a.a[0],b[1]-a.a[1]),straight=!tap&&len<ch*1.15,hv=Math.min(Math.abs(b[0]-a.a[0]),Math.abs(b[1]-a.a[1]))<ch*0.14;
-    const shortDim=straight&&hv&&ch*V.z>=28&&!nearInk(a.a)&&(()=>{const k=Math.abs(b[0]-a.a[0])>=Math.abs(b[1]-a.a[1])?0:1,c=nodes(pg()).map(n=>n[k]),t=12/V.z,
-      s=v=>c.find(x=>Math.abs(x-v)<t);const s0=s(a.a[k]),s1=s(b[k]);return s0!=null&&s1!=null&&s0!==s1;})();   /* 짧은 치수(보 띄움 1.2 등): 양 끝이 기둥·선 위치에 맞을 때만 */
-    if(tap&&!nearInk(a.a)){processInk();dimTap(a.a);}
-    else if(straight&&(ch*V.z>=70||shortDim)){processInk();mkDim(a.a,b);}   /* 길고 곧으면 치수선, 아니면 손글씨 */
-    else{addInk(a.pts);return;}}
+  else if(tool==='dim'){if(tap&&!nearInk(a.a)){processInk();dimTap(a.a);}else{addInk(a.pts);return;}}
   else if(tool==='memo'){if(a.pts.length>1){mod();pg().pen.push({c:'#222',pts:a.pts.filter((q,i)=>i%2===0||i===a.pts.length-1).map(q=>q.map(r1))});}}
   else if(tool==='mark'&&tap){mod();pg().marks.push({x:r1(a.a[0]),y:r1(a.a[1]),t:markT,no:nextNo('marks',m=>m.t===markT)});}
   else if(tool==='photo'&&tap){photoAt=a.a;$('fPhoto').value='';$('fPhoto').click();}
@@ -523,7 +517,7 @@ $('fPhoto').onchange=async e=>{const f=e.target.files[0];if(!f||!photoAt)return;
 
 /* ── 화면 구성 ── */
 function bounds(p){const xs=[],ys=[],add=(x,y)=>{xs.push(x);ys.push(y);};
-  p.cols.forEach(c=>add(c.x,c.y));p.hl.forEach(s=>s.pts.forEach(q=>add(...q)));p.dims.forEach(d=>{add(...d.a);add(...d.b);});
+  p.cols.forEach(c=>add(c.x,c.y));p.hl.forEach(s=>s.pts.forEach(q=>add(...q)));p.dims.concat(autoDims(p)).forEach(d=>{add(...d.a);add(...d.b);});
   p.pen.forEach(s=>s.pts.forEach(q=>add(...q)));p.marks.concat(p.photos).forEach(m=>add(m.x,m.y));
   return xs.length?[Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]:null;}
 function fit(){const B=bounds(pg()),lw=legOpen?280:0,W=cv.clientWidth-lw,H=cv.clientHeight;if(!W||!H)return;if(!B){V={z:1,ox:60+lw,oy:90};return draw();}
@@ -536,7 +530,7 @@ function ui(){$('site').value=D.site;
   $('bGrid').className=gridSnap?'on':'';if(!selItem())sel=null;selbar();draw();}
 $('markT').innerHTML=MARKS.map(([t,n])=>`<option value="${t}">${t==='SS'?'Ss':t==='ETC'?'M':t} ${n}</option>`).join('');
 $('markT').onchange=e=>markT=e.target.value;
-$('tabs').onclick=e=>{const b=e.target.closest('[data-pg]');if(!b)return;const i=+b.dataset.pg;if(i===P)return pageDlg();processInk();P=i;sel=null;if(tool==='bgadj')tool='mem';ui();fit();};
+$('tabs').onclick=e=>{const b=e.target.closest('[data-pg]');if(!b)return;const i=+b.dataset.pg;if(i===P)return pageDlg();processInk();P=i;sel=null;trk=[];if(tool==='bgadj')tool='mem';ui();fit();};
 /* 지금 색: 톡 = 기둥 [규격▾] · 긋기 = [보|벽|트러스] [규격▾] — 찍기 전에 바로 정함 */
 function curRender(){const c=penColor.toLowerCase(),cp=D.pal.find(x=>x.c.toLowerCase()===c&&x.kind==='col'),lp=D.pal.find(x=>x.c.toLowerCase()===c&&x.kind!=='col'),lk=lp?lp.kind:defKind(c);
   const opts=(kind,cur)=>`<option value="">${cur?esc(cur):'규격 ▾'}</option>`+specList(kind).map(s=>`<option${s===cur?' selected':''}>${esc(s)}</option>`).join('')+'<option value="__">직접 입력…</option>';
@@ -571,15 +565,13 @@ function axisDlg(){const cp=pal(penId).kind==='col'?pal(penId):D.pal.find(k=>k.k
   openDlg(`<h3>📐 기둥 간격으로 찍기</h3><small>간격을 m 로 (2600 처럼 mm 도 됨), 띄어쓰기나 쉼표로. 같은 간격 반복은 6x3</small>
     <label>가로 간격 (왼쪽 → 오른쪽)</label><input id="axX" placeholder="예) 6 7.2 7.2" autocomplete="off">
     <label>세로 간격 (위 → 아래)</label><input id="axY" placeholder="예) 8 4.5" autocomplete="off">
-    ${chk('axC',1,`교차점마다 기둥 (${esc(cp?cp.spec||'규격 없음':'')})`)}${chk('axB',0,`축선 따라 보 (${esc(bp?bp.spec||'규격 없음':'')})`)}${chk('axD',1,'치수선 (정확한 값)')}
+    ${chk('axC',1,`교차점마다 기둥 (${esc(cp?cp.spec||'규격 없음':'')})`)}${chk('axB',0,`축선 따라 보 (${esc(bp?bp.spec||'규격 없음':'')})`)}
     <div class="row"><button id="axOk" class="on">만들기</button></div>`,m=>{const q=s=>m.querySelector(s);
     q('#axOk').onclick=()=>{const X=spans(q('#axX').value),Y=spans(q('#axY').value);if(!X.length&&!Y.length)return toast('간격을 넣어 주세요');
       const p=pg(),o=gs(toW(110,110)).map(Math.round),xs=[o[0]],ys=[o[1]];X.forEach(v=>xs.push(r1(xs[xs.length-1]+v*GRID)));Y.forEach(v=>ys.push(r1(ys[ys.length-1]+v*GRID)));
       mod();if(q('#axC').checked&&cp)ys.forEach(y=>xs.forEach(x=>{if(!p.cols.some(c=>Math.hypot(c.x-x,c.y-y)<3))p.cols.push({p:cp.id,x,y});}));
       if(q('#axB').checked&&bp){ys.forEach(y=>xs.slice(1).forEach((x,i)=>p.hl.push({p:bp.id,pts:[[xs[i],y],[x,y]]})));xs.forEach(x=>ys.slice(1).forEach((y,i)=>p.hl.push({p:bp.id,pts:[[x,ys[i]],[x,y]]})));}
-      if(q('#axD').checked){const tot=a=>a[a.length-1]-a[0];
-        if(X.length)p.dims.push({a:[xs[0],ys[0]-36],b:[xs[xs.length-1],ys[0]-36],t:xs.map(x=>(x-xs[0])/tot(xs)),v:X.map(String),est:X.map(()=>0)});
-        if(Y.length)p.dims.push({a:[xs[0]-36,ys[0]],b:[xs[0]-36,ys[ys.length-1]],t:ys.map(y=>(y-ys[0])/tot(ys)),v:Y.map(String),est:Y.map(()=>0)});}
+
       if(cp)penId=cp.id;tool='mem';dlg.close();save();ui();fit();toast(`기둥 ${xs.length}×${ys.length} — 규격 다른 기둥은 그 색으로 톡`);};});}
 /* 층 ＋: 오른쪽 = 위층(2F, 3F…), 왼쪽 = 지하(B1F, B2F…) — 층고표에도 자동 추가, 층고는 옆 층 값 */
 function addFloor(up){processInk();sortFloors();const lv=D.floors.map(f=>lvl(f.n)),gr=lv.filter(v=>v>0&&v<5e3),bs=lv.filter(v=>v<0);
@@ -589,13 +581,13 @@ function addFloor(up){processInk();sortFloors();const lv=D.floors.map(f=>lvl(f.n
   D.pages.splice(at,0,newPage('plan','',[n]));P=at;sel=null;save();ui();fit();toast(n+' 추가 — 비슷한 층이면 ⚙ 쪽 → 쪽 복제 / 층고는 ☰ → 층고표');}
 function menuDlg(){openDlg(`<h3>☰ 메뉴</h3><label>날짜</label><input id="mDate" type="date" value="${esc(D.date)}">
     <div class="row" style="justify-content:flex-start"><button id="mFl">층고표·슬래브</button><button id="mBg">🖼 배경 도면</button><button id="mHw">✍ 글씨 학습</button><button id="mFg">${fingerDraw?'☝ 손가락=그리기 (지금)':'✋ 손가락=화면 이동 (지금)'}</button></div>
-    <div class="row" style="justify-content:flex-start"><button id="mMk">${showMk?'부재명 표시 켬':'부재명 표시 끔'}</button><button id="mLs">${lenSplit?'같은 규격도 길이 다르면 다른 이름 (켬)':'길이 달라도 같은 이름 (규격만)'}</button><button id="mDr">${dimDrive?'치수 넣으면 그림 맞춤 (켬)':'치수 넣어도 그림 그대로'}</button></div>
+    <div class="row" style="justify-content:flex-start"><button id="mMk">${showMk?'부재명 표시 켬':'부재명 표시 끔'}</button><button id="mLs">${lenSplit?'같은 규격도 길이 다르면 다른 이름 (켬)':'길이 달라도 같은 이름 (규격만)'}</button></div>
     <div class="row" style="justify-content:flex-start"><button id="mOpen">📂 저장한 파일 열기</button><button id="mNew">새 현장</button></div>
     <small>단위: 치수·층고는 m — 2600 처럼 mm 로 써도 2.6 m 로 바뀝니다 (100 넘으면 mm 로 봄) · 슬래브는 mm · 모눈 1칸 = 1 m · S펜 옆 버튼 누르고 문지르기 = 지우개</small>
     <div class="row"><button id="mOk" class="on">닫기</button></div>`,m=>{const q=s=>m.querySelector(s);
     q('#mDate').onchange=e=>{D.date=e.target.value;save();};q('#mFl').onclick=()=>floorDlg();q('#mBg').onclick=()=>bgDlg();q('#mHw').onclick=()=>hwDlg();
     q('#mFg').onclick=()=>{fingerDraw=!fingerDraw;dlg.close();ui();toast(fingerDraw?'손가락으로도 그립니다 (두 손가락 = 이동·확대)':'손가락은 화면 이동·확대');};
-    q('#mMk').onclick=()=>{showMk=!showMk;dlg.close();ui();};q('#mDr').onclick=()=>{dimDrive=!dimDrive;try{localStorage.setItem('ds_field_drive',dimDrive?'1':'0');}catch(e){}dlg.close();toast(dimDrive?'치수 숫자를 넣으면 그림이 그 길이로 맞춰집니다':'치수 숫자를 넣어도 그림은 그대로');};
+    q('#mMk').onclick=()=>{showMk=!showMk;dlg.close();ui();};
     q('#mLs').onclick=()=>{lenSplit=!lenSplit;MKV++;try{localStorage.setItem('ds_field_lensplit',lenSplit?'1':'0');}catch(e){}dlg.close();ui();toast(lenSplit?'같은 규격이라도 길이(경간)가 다르면 G1·G2 로 나눔':'규격만 같으면 같은 이름 (DS-PLAN 과 같음)');};
     q('#mOpen').onclick=()=>{dlg.close();$('fOpen').value='';$('fOpen').click();};q('#mNew').onclick=()=>{dlg.close();newSite();};q('#mOk').onclick=()=>dlg.close();});}
 
@@ -715,7 +707,7 @@ function shot(p,legend){const B=bounds(p);if(!B)return null;const pad=30,w=B[2]-
 const rotSpec=s=>{const m=String(s).match(/^\s*(\d+(?:\.\d+)?)\s*[xX×*]\s*(\d+(?:\.\d+)?)\s*$/);return m?m[2]+'x'+m[1]:null;};
 /* 앱 모양 → DS-FIELD-1: 층 여러 개인 평면은 첫 층에 그림, 나머지 층은 same 쪽으로 펼침 · 돌린 기둥은 규격 가로세로 바꾼 색으로 */
 function buildOut(){const pal=D.pal.map(k=>({id:k.id,kind:k.kind,spec:k.spec,c:k.c})),pages=[],shots=[],imgs={},hOf=n=>(D.floors.find(f=>f.n===n)||{}).h||'';
-  D.pages.forEach(p0=>{const p=JSON.parse(JSON.stringify(p0));p.dims.forEach(d=>{delete d.ink;delete d.est;});
+  D.pages.forEach(p0=>{const p=JSON.parse(JSON.stringify(p0));p.dims.forEach(d=>{delete d.ink;delete d.est;});p.dims=p.dims.concat(autoDims(p0).map(d=>{delete d.auto;return d;}));p.hl.forEach(h=>delete h.L);
     p.cols=p.cols.map(c=>{if(!c.r)return c;const k=pal.find(q=>q.id===c.p),rs=k&&rotSpec(k.spec);if(!rs)return c;const id=c.p+'~r';
       if(!pal.some(q=>q.id===id))pal.push({id,kind:'col',spec:rs,c:k.c});return Object.assign({},c,{p:id});});
     const used=D.pal.filter(k=>p0.hl.some(s=>s.p===k.id)||p0.cols.some(c=>c.p===k.id)),leg=used.map(k=>[k.c,`${KIND[k.kind]}  ${k.spec||'(규격 없음)'}`]);
@@ -735,10 +727,10 @@ function fromFile(d){const pages=[],floors=[];
     q.cols=q.cols.map(c=>/~r$/.test(c.p)?Object.assign({},c,{p:c.p.slice(0,-2),r:1}):c);['same','memo','h','slab'].forEach(k=>delete q[k]);pages.push(q);});
   return migrate({site:d.site||'',date:d.date||today(),slab:(d.pages.find(p=>p.slab)||{}).slab||'',floors,pal:(d.pal||newDoc().pal).filter(k=>!/~r$/.test(k.id)).map(k=>Object.assign({c:'#888'},k)),pages,imgs:Object.assign({},d._imgs,d._bg)});}
 function checkOut(){const o=[],seen={};D.pages.forEach(p=>{const nm=flLabel(p);if(p.type==='memo')return;
-  const nb=p.dims.reduce((a,d)=>a+d.v.filter(v=>!v).length,0),hasH=p.dims.some(d=>dimPts(d).hor),hasV=p.dims.some(d=>!dimPts(d).hor);
+  const nb=p.dims.reduce((a,d)=>a+d.v.filter(v=>!v).length,0),DD=p.dims.concat(autoDims(p)),hasH=DD.some(d=>dimPts(d).hor),hasV=DD.some(d=>!dimPts(d).hor);
   if(p.type==='plan'){if(!pageFl(p).length)o.push(`${nm}: 층을 안 골랐습니다 (⚙ 쪽)`);pageFl(p).forEach(n=>{if(seen[n])o.push(`${n} 층이 두 쪽에 다 체크됨`);seen[n]=1;});
-    if((p.hl.length||p.cols.length)&&!(hasH&&hasV))o.push(`${nm}: 가로·세로 치수선이 모두 있어야 모델이 됩니다`);
-    const hx=[],vy=[];p.dims.forEach(d=>{const{hor,P:Q}=dimPts(d);Q.forEach(q=>(hor?hx:vy).push(hor?q[0]:q[1]));});const ok=(v,a)=>a.some(x=>Math.abs(x-v)<=10);
+    if((p.hl.length||p.cols.length)&&!(hasH&&hasV))o.push(`${nm}: 가로·세로로 퍼진 부재가 있어야 모델이 됩니다`);
+    const hx=[],vy=[];DD.forEach(d=>{const{hor,P:Q}=dimPts(d);Q.forEach(q=>(hor?hx:vy).push(hor?q[0]:q[1]));});const ok=(v,a)=>a.some(x=>Math.abs(x-v)<=10);
     const un=p.hl.filter(s=>pal(s.p).kind!=='truss'&&!s.pts.every(q=>ok(q[0],hx)&&ok(q[1],vy))).length+p.cols.filter(c=>!(ok(c.x,hx)&&ok(c.y,vy))).length;
     if(un&&hasH&&hasV)o.push(`${nm}: 치수 눈금에 안 걸린 부재 ${un}개 (그린 위치 비율로 들어감 — 괜찮으면 무시)`);}
   if(p.type==='elev'&&p.hl.length&&!(hasH||hasV))o.push(`${nm}: 스팬·높이 치수가 없습니다`);if(nb)o.push(`${nm}: 치수 숫자 빈칸 ${nb}`);

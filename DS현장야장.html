@@ -81,7 +81,7 @@ const SPECS={col:['400x400','500x500','500x400','400x500','600x600','300x300','�
   beam:['300x600','300x500','300x700','350x600','400x600','400x700','250x500','200x400','300x450','H-300x150','H-350x175','H-400x200','H-450x200','H-500x200','ㄷ150x75'],
   wall:['200','100','190','RC150','RC200','RC250','RC300'],truss:['P-48.6x2.3','P-60.5x3.2','P-76.3x3.2','L-50x50x6','L-65x65x6','ㄷ100x50']};
 const KC={wall:['#343a40','#868e96','#795548','#495057'],col:['#e03131','#c2255c','#f76707','#9c36b5','#d6336c'],beam:['#f5c518','#4dabf7','#9775fa','#3bc9db','#ff8787','#69db7c','#a9743b','#2b8a7e','#e599f7','#c9a227'],truss:['#ae3ec9','#7048e8','#1098ad','#0b7285']};
-const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (위에서 보|벽|트러스 · 규격 고름) · 한 획 = 한 직선 부재 · 기둥 규격 다르면 다른 색으로 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
+const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (위에서 보|벽|트러스 · 규격 고름) · 한 획 = 한 직선 부재 · 펜을 기둥에 대었다가 보 위로 옮기면 「기둥에서 ○ m」(0.1 m 단위) · 기둥 규격 다르면 다른 색으로 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
   dim:'부재 톡 = 길이 고치기 (그 부재 끝의 기둥 줄이 옮겨짐) · 바깥 치수 숫자 톡 = 그 간격 고치기 · 부재 옆에 숫자를 써도 됨 · 치수는 최외곽에 자동 · 단위 m (6000 = 6)',
   memo:'자유 메모 (실명·Mirror·특기사항 등 — 모델엔 안 들어가고 DS-PLAN 배경 그림으로 감)',mark:'조사 종류 고르고 위치 톡 → 바로 카메라 (찍은 사진은 그 표시 옆에)',photo:'사진 찍을 위치 톡 → 카메라',del:'지울 것을 톡 또는 문지르기',
   sel:'톡 = 선택 → 끌어서 옮기기 · 선 끝 동그라미 끌기 = 늘이기/줄이기 · 아래 색 버튼 = 규격 바꾸기 · 기둥을 옮기면 붙은 선도 따라옴',
@@ -193,15 +193,24 @@ function guideDraw(){if(tool!=='mem')return;const S=w=>[w[0]*V.z+V.ox,w[1]*V.z+V
   trk.forEach(n=>{const s=S(n);g.beginPath();g.moveTo(s[0]-5,s[1]-5);g.lineTo(s[0]+5,s[1]+5);g.moveTo(s[0]+5,s[1]-5);g.lineTo(s[0]-5,s[1]+5);g.stroke();});   /* 잡힌 점 × */
   if(ALP){g.setLineDash([6,4]);const e=S(ALP);[ALN.x,ALN.y].forEach(n=>{if(!n)return;const s=S(n);g.beginPath();g.moveTo(...s);g.lineTo(...e);g.stroke();});}g.restore();}
 /* 한 점 맞춤: 기둥·선 끝 → 선 위 → 모눈 → 줄 맞춤. 반환 [점, 종류] */
-function snapPt(q,p,tol){ALN={x:null,y:null};ALP=null;let n=snapNode(q,p,tol);if(n)return[n,'node'];n=snapMid(q,p,tol*0.8);if(n)return[n,'mid'];n=snapSeg(q,p,tol*0.7);if(n)return[n,'seg'];return[alignSnap(gs(q),p,tol*0.45),gridSnap?'grid':'free'];}
+function snapPt(q,p,tol){ALN={x:null,y:null};ALP=null;SEGI=null;let n=snapNode(q,p,tol);if(n)return[n,'node'];n=snapMid(q,p,tol*0.5);if(n)return[n,'mid'];n=snapSegQ(q,p,tol*0.7);if(n)return[n,'seg'];return[alignSnap(gs(q),p,tol*0.45),gridSnap?'grid':'free'];}
 const SNAP=30;   /* 화면 px — 이 안이면 붙음 */
 /* 한 획 → 꺾인 곳마다 직선 (가로/세로는 곧게, 끝은 기둥·선 끝에 붙임) — 그리는 중 미리보기에도 씀 */
 
+/* 선 위에 붙기: 기준점(펜을 대 본 기둥·끝, 없으면 가까운 끝)에서 0.1 m 단위 거리로 — SEGI = {기준, m, 기둥?} */
+let SEGI=null,SEGE=null;
+function snapSegQ(q,p,tol){let bt=null,bd=tol;p.hl.forEach(s=>{const[a,c]=s.pts,vx=c[0]-a[0],vy=c[1]-a[1],t=((q[0]-a[0])*vx+(q[1]-a[1])*vy)/(vx*vx+vy*vy||1);if(t<=0.02||t>=0.98)return;
+    const d=Math.hypot(a[0]+vx*t-q[0],a[1]+vy*t-q[1]);if(d<bd){bd=d;bt={s,t};}});if(!bt)return null;
+  const[a,c]=bt.s.pts,L=Math.hypot(c[0]-a[0],c[1]-a[1]),ux=(c[0]-a[0])/L,uy=(c[1]-a[1])/L,along=n=>(n[0]-a[0])*ux+(n[1]-a[1])*uy,pos=bt.t*L;
+  const on=trk.filter(n=>Math.abs((n[0]-a[0])*uy-(n[1]-a[1])*ux)<1&&along(n)>-0.5&&along(n)<L+0.5),ref=on.length?on.reduce((m,n)=>Math.abs(along(n)-pos)<Math.abs(along(m)-pos)?n:m):(bt.t<0.5?a:c);
+  const rp=along(ref),st=0.1*GRID,np=rp+Math.round((pos-rp)/st)*st;if(np<=0.5||np>=L-0.5)return null;
+  SEGI={ref:[ref[0],ref[1]],m:Math.abs(np-rp)/GRID,col:p.cols.some(k=>Math.hypot(k.x-ref[0],k.y-ref[1])<1)};return[r1(a[0]+ux*np),r1(a[1]+uy*np)];}
+const segTxt=I=>`${I.col?'기둥':'끝'}에서 ${I.m.toFixed(1)} m`;
 function snapMid(q,p,tol){let b=null,bd=tol;p.hl.forEach(s=>{const m=[(s.pts[0][0]+s.pts[1][0])/2,(s.pts[0][1]+s.pts[1][1])/2],d=Math.hypot(m[0]-q[0],m[1]-q[1]);if(d<bd){bd=d;b=m;}});return b&&b.map(r1);}   /* 선 가운데 */
-function polySegs(pts){const p=pg(),tol=SNAP/V.z,v=[pts[0],pts[pts.length-1]],segs=[];   /* 한 획 = 무조건 한 직선 (시작점 → 펜 뗀 곳) */let a=snapPt(v[0],p,tol)[0];
+function polySegs(pts){const p=pg(),tol=SNAP/V.z,v=[pts[0],pts[pts.length-1]],segs=[];SEGE=null;   /* 한 획 = 무조건 한 직선 (시작점 → 펜 뗀 곳) */let a=snapPt(v[0],p,tol)[0];
   for(let i=1;i<v.length;i++){let b=v[i];const dx=b[0]-a[0],dy=b[1]-a[1],hor=Math.abs(dy)<Math.abs(dx)*0.22,ver=Math.abs(dx)<Math.abs(dy)*0.22;   /* 약 12° 안쪽이면 곧게 */
     b=gs(b);if(hor)b=[b[0],a[1]];else if(ver)b=[a[0],b[1]];
-    const nb=snapNode(b,p,tol)||snapMid(b,p,tol*0.8)||snapSeg(b,p,tol*0.7);
+    SEGI=null;const nb=snapNode(b,p,tol)||snapMid(b,p,tol*0.5)||snapSegQ(b,p,tol*0.7);SEGE=SEGI;
     if(nb){ALN={x:null,y:null};ALP=null;}if(nb)b=p.type==='plan'&&hor?[nb[0],a[1]]:p.type==='plan'&&ver?[a[0],nb[1]]:nb;   /* 평면은 곧게 우선, 트러스 입면은 절점 잇기 우선 */
     else{const al=alignSnap(b,p,tol*0.45);b=hor?[al[0],a[1]]:ver?[a[0],al[1]]:al;}
     if(Math.hypot(b[0]-a[0],b[1]-a[1])<tol*0.6)continue;segs.push([a.map(r1),b.map(r1)]);a=b;}
@@ -304,7 +313,7 @@ function dragMove(o,dl){const p=pg(),it=p[o.h.k][o.h.i],O=o.orig,tol=SNAP/V.z;if
   const others={cols:p.cols.filter(c=>c!==it),hl:p.hl.filter(s=>s!==it)},mv=q=>[q[0]+dl[0],q[1]+dl[1]];
   if(o.h.k==='cols'){const sub={cols:others.cols,hl:p.hl.filter(s=>!o.node.some(pt=>s.pts.includes(pt)))},q=colSnap(mv([O.x,O.y]),sub,others.cols,tol);
     it.x=r1(q[0]);it.y=r1(q[1]);o.node.forEach(pt=>{pt[0]=it.x;pt[1]=it.y;});}
-  else if(o.h.k==='hl'&&o.h.part!=='body'){const e=o.h.part,fix=it.pts[1-e];let q=mv(O.pts[e]);const n=snapNode(q,others,tol)||snapMid(q,others,tol*0.8)||snapSeg(q,others,tol);
+  else if(o.h.k==='hl'&&o.h.part!=='body'){const e=o.h.part,fix=it.pts[1-e];let q=mv(O.pts[e]);const n=snapNode(q,others,tol)||snapMid(q,others,tol*0.5)||snapSegQ(q,others,tol);
     if(n)q=n;else{q=gs(q);const dx=q[0]-fix[0],dy=q[1]-fix[1];if(p.type==='plan'){if(Math.abs(dy)<Math.abs(dx)*.18)q=[q[0],fix[1]];else if(Math.abs(dx)<Math.abs(dy)*.18)q=[fix[0],q[1]];}}
     it.pts[e]=q.map(r1);}
   else if(o.h.k==='hl'){const a=mv(O.pts[0]),b=mv(O.pts[1]),na=snapNode(a,others,tol),nb=na?null:snapNode(b,others,tol),ga=gs(a);   /* 한쪽 끝이 기둥·선 끝에 닿으면 붙임 */
@@ -463,6 +472,7 @@ function hoverDraw(){if(!hov||['memo','photo','mark','bgadj'].includes(tool))ret
   g.strokeStyle=g.fillStyle='#1c7ed6';g.lineWidth=2.5;
   if(kind==='node'){g.strokeRect(s[0]-8,s[1]-8,16,16);}else if(kind==='mid'){g.beginPath();g.moveTo(s[0],s[1]-10);g.lineTo(s[0]+9,s[1]+7);g.lineTo(s[0]-9,s[1]+7);g.closePath();g.stroke();}else if(kind==='seg'){g.beginPath();g.moveTo(s[0],s[1]-9);g.lineTo(s[0]+9,s[1]);g.lineTo(s[0],s[1]+9);g.lineTo(s[0]-9,s[1]);g.closePath();g.stroke();}
   else if(kind==='grid'){g.beginPath();g.moveTo(s[0]-8,s[1]);g.lineTo(s[0]+8,s[1]);g.moveTo(s[0],s[1]-8);g.lineTo(s[0],s[1]+8);g.stroke();}
+  if(kind==='seg'&&SEGI){const rs=S(SEGI.ref);g.setLineDash([5,4]);g.lineWidth=3;g.strokeStyle='rgba(28,126,214,.7)';g.beginPath();g.moveTo(...rs);g.lineTo(...s);g.stroke();g.setLineDash([]);lenLabel(segTxt(SEGI),...s);}   /* 기둥에서 ○ m */
   g.restore();
   /* 기둥 찍기: 들어갈 자리 미리 보기 + 가장 가까운 기둥에서 가로·세로 거리 (m) */
   const p=pg();if(tool==='mem'&&lastKind[penColor.toLowerCase()]==='col'){const c=colSnap(hov,p,p.cols,24/V.z),cs=S(c);g.save();g.strokeStyle=penColor;g.setLineDash([4,3]);g.lineWidth=2;g.strokeRect(cs[0]-11,cs[1]-11,22,22);g.restore();
@@ -493,7 +503,7 @@ cv.onpointermove=e=>{const s=[e.offsetX,e.offsetY];
     else if(tool==='dim'){g.lineWidth=2.4;path('#1c7ed6');}
     else if(tool==='mem'){g.lineWidth=3;g.globalAlpha=.25;path(penColor);g.globalAlpha=1;   /* 실제로 들어갈 곧은 선 + 길이 */
       const sg=polySegs(act.pts);g.strokeStyle=penColor;g.lineWidth=10;g.globalAlpha=.85;g.beginPath();sg.forEach(([a,b])=>{g.moveTo(...S(a));g.lineTo(...S(b));});g.stroke();g.globalAlpha=1;
-      const l=sg[sg.length-1];if(l){g.fillStyle='#1c7ed6';sg.forEach(([a,b])=>[a,b].forEach(w=>{const c=S(w);g.fillRect(c[0]-3,c[1]-3,6,6);}));lenLabel(`${lenM(l[0],l[1]).toFixed(1)} m`,...s);guideDraw();}}});};
+      const l=sg[sg.length-1];if(l){g.fillStyle='#1c7ed6';sg.forEach(([a,b])=>[a,b].forEach(w=>{const c=S(w);g.fillRect(c[0]-3,c[1]-3,6,6);}));lenLabel(`${lenM(l[0],l[1]).toFixed(1)} m`,...s);if(SEGE)lenLabel('끝: '+segTxt(SEGE),s[0],s[1]+34);guideDraw();}}});};
 cv.onpointerup=cv.onpointercancel=e=>{if(touches.has(e.pointerId)){touches.delete(e.pointerId);gPrev=null;if(!touches.size&&gBg){gBg=0;save();}}
   if(!act||act.id!==e.pointerId)return;const a=act;act=null;
   if(a.tool0){tool=a.tool0;save();return ui();}   /* S펜 옆 버튼 지우개 끝 → 원래 도구 */

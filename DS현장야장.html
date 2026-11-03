@@ -58,9 +58,11 @@ dialog small{color:#5b6b80;font-size:12px}
   <button id="bGrid">▦ 모눈</button>
   <button id="bInst" style="display:none">📲 설치</button>
   <button id="bShare" class="on">📤 보내기</button>
+  <button id="bPdf">📄 PDF</button>
+  <button id="bDraft">📥 임시저장</button>
   <button id="bSave">💾 저장</button>
 </div>
-<div id="cbar" class="bar"><div class="crow"><button id="bLeg">📋 범례</button><div class="sep"></div><div id="sws" style="display:flex;gap:6px"></div><input id="cCustom" type="color" title="다른 색" style="width:42px;height:38px;padding:2px;flex:none"></div><div class="crow"><div id="cur" style="display:flex;gap:4px;align-items:center;white-space:nowrap;font-size:13px"></div></div><div class="crow"><div id="tools" style="display:flex;gap:4px"></div><div class="sep"></div><button id="bUndo">↩ 되돌리기</button><button id="bFit">⤢ 맞춤</button><button id="b3d">🧊 3D</button></div></div>
+<div id="cbar" class="bar"><div class="crow"><button id="bLeg">📋 범례</button><div class="sep"></div><div id="sws" style="display:flex;gap:6px"></div><input id="cCustom" type="color" title="다른 색" style="width:42px;height:38px;padding:2px;flex:none"></div><div class="crow"><div id="cur" style="display:flex;gap:4px;align-items:center;white-space:nowrap;font-size:13px"></div></div><div class="crow"><div id="tools" style="display:flex;gap:4px"></div><div class="sep"></div><button id="bUndo">↩ 되돌리기</button><button id="bRedo">↪ 다시</button><button id="bFit">⤢ 맞춤</button><button id="b3d">🧊 3D</button></div></div>
 <canvas id="cv"></canvas><div id="leg"></div>
 <div id="hint"><span></span></div>
 <input id="ed" inputmode="decimal" autocomplete="off"><div id="edx"></div><div id="selbar"></div>
@@ -90,10 +92,10 @@ const BEAM_C=['#f5c518','#4dabf7','#9775fa','#3bc9db','#ff8787','#69db7c','#a974
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const r1=v=>Math.round(v*10)/10;
 const newPage=(type,name,fl)=>({type,name,fl:fl||[],pc:'',hl:[],cols:[],dims:[],pen:[],marks:[],photos:[]});
-const newDoc=()=>({site:'',date:today(),slab:'',floors:[{n:'1F',h:''}],pal:[{id:'w1',kind:'wall',spec:'',c:'#343a40'},{id:'c1',kind:'col',spec:'',c:'#e03131'},
+const newDoc=()=>({id:'s'+Date.now().toString(36),site:'',date:today(),slab:'',floors:[{n:'1F',h:''}],pal:[{id:'w1',kind:'wall',spec:'',c:'#343a40'},{id:'c1',kind:'col',spec:'',c:'#e03131'},
   {id:'b1',kind:'beam',spec:'',c:'#f5c518'},{id:'t1',kind:'truss',spec:'',c:'#ae3ec9'}],pages:[newPage('plan','','1F'.split(' '))],imgs:{}});
 let markPhoto=true,photoFor=null,showMarks=true,memoC='#1d2733',memoW=2,penColor='#f5c518',lastKind={'#e03131':'col'};
-let D=newDoc(),P=0,tool='mem',penId='w1',markT='SH',undo=[],V={z:1,ox:60,oy:60},fingerDraw=false;
+let D=newDoc(),P=0,tool='mem',penId='w1',markT='SH',undo=[],redo=[],V={z:1,ox:60,oy:60},fingerDraw=false;
 const pg=()=>D.pages[P],pal=id=>D.pal.find(p=>p.id===id)||{kind:'beam',spec:'',c:'#888'};
 /* 규격별 색 자동: 같은 종류 안에서 아직 안 쓴 색 */
 function autoColor(kind,except){const used=D.pal.filter(k=>k!==except&&k.kind===kind).map(k=>k.c.toLowerCase()),L=KC[kind];return L.find(c=>!used.includes(c))||L[D.pal.length%L.length];}
@@ -117,11 +119,15 @@ function flLabel(p){if(p.type!=='plan')return p.name||'?';const f=pageFl(p);if(!
 
 /* ── 자동저장: IndexedDB (사진 때문에 localStorage 로는 모자람) ── */
 let _db;const db=()=>_db||(_db=new Promise((res,rej)=>{const r=indexedDB.open('ds_field',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));
-const idbSet=v=>db().then(d=>new Promise((res,rej)=>{const t=d.transaction('k','readwrite');t.objectStore('k').put(v,'doc');t.oncomplete=res;t.onerror=t.onabort=()=>rej(t.error);}));
-const idbGet=()=>db().then(d=>new Promise((res,rej)=>{const r=d.transaction('k').objectStore('k').get('doc');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));
+const idbPut=(k,v)=>db().then(d=>new Promise((res,rej)=>{const t=d.transaction('k','readwrite'),o=t.objectStore('k');if(v===undefined)o.delete(k);else o.put(v,k);t.oncomplete=res;t.onerror=t.onabort=()=>rej(t.error);}));   /* v 없으면 지움 */
+const idbGetK=k=>db().then(d=>new Promise((res,rej)=>{const r=d.transaction('k').objectStore('k').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));
+const idbSet=v=>idbPut('doc',v),idbGet=()=>idbGetK('doc');
 let svT;function save(){MKV++;clearTimeout(svT);svT=setTimeout(()=>idbSet(D).catch(e=>toast('자동저장 실패 — 바로 [DS-PLAN용 저장] 하세요: '+e)),400);}
-function mod(){MKV++;undo.push(JSON.stringify({P,pages:D.pages,pal:D.pal,floors:D.floors,slab:D.slab}));if(undo.length>100)undo.shift();}
-function doUndo(){const s=undo.pop();if(!s)return toast('되돌릴 것 없음');const o=JSON.parse(s);Object.assign(D,{pages:o.pages,pal:o.pal,floors:o.floors,slab:o.slab});P=Math.min(o.P,D.pages.length-1);sel=null;save();ui();}
+const snapState=()=>JSON.stringify({P,pages:D.pages,pal:D.pal,floors:D.floors,slab:D.slab});
+function mod(){MKV++;undo.push(snapState());if(undo.length>100)undo.shift();redo=[];}
+/* ↩ 되돌리기 / ↪ 다시 하기 (되돌린 것 다시) */
+function doUndo(back=true){const A=back?undo:redo,B=back?redo:undo,s=A.pop();if(!s)return toast(back?'되돌릴 것 없음':'다시 할 것 없음');B.push(snapState());
+  const o=JSON.parse(s);Object.assign(D,{pages:o.pages,pal:o.pal,floors:o.floors,slab:o.slab});P=Math.min(o.P,D.pages.length-1);sel=null;MKV++;save();ui();}
 /* 예전 판(쪽마다 층고) 자동 변환 */
 function migrate(d){if(!d.floors){d.floors=[];d.slab=d.slab||'';d.pages.forEach(p=>{if(p.type!=='plan')return;if(p.name&&!d.floors.some(f=>f.n===p.name))d.floors.push({n:p.name,h:p.h||''});
     if(!d.slab&&p.slab)d.slab=p.slab;p.fl=p.name?[p.name]:[];});
@@ -195,10 +201,12 @@ function rdp(pts,eps){if(pts.length<3)return pts;const a=pts[0],b=pts[pts.length
 /* 캐드처럼 추적: 펜을 대 본 기둥·끝점(최근 3개)은 넓게, 다른 점은 좁게 가로·세로 줄을 맞춤 → 안내선 */
 let trk=[],ALN={x:null,y:null},ALP=null;
 function trackHover(q){const n=nodes(pg()).find(n=>Math.hypot(n[0]-q[0],n[1]-q[1])<14/V.z);if(n&&!trk.some(m=>m[0]===n[0]&&m[1]===n[1])){trk.push([n[0],n[1]]);if(trk.length>3)trk.shift();}}
-function alignSnap(q,p,tol){let x=q[0],y=q[1],bx=1e9,by=1e9;ALN={x:null,y:null};
+/* 펜을 대 봤던 점 중 지금 쪽에 실제로 있는 것만 — 지운 부재·새 현장의 옛 점에 붙지 않게 */
+function liveTrk(){const N=nodes(pg());trk=trk.filter(n=>N.some(m=>m[0]===n[0]&&m[1]===n[1]));}
+function alignSnap(q,p,tol){liveTrk();let x=q[0],y=q[1],bx=1e9,by=1e9;ALN={x:null,y:null};
   const test=(n,lim)=>{const dx=Math.abs(n[0]-q[0]),dy=Math.abs(n[1]-q[1]);if(dx<lim&&dx<bx){bx=dx;x=n[0];ALN.x=n;}if(dy<lim&&dy<by){by=dy;y=n[1];ALN.y=n;}};
   trk.forEach(n=>test(n,SNAP*1.3/V.z));nodes(p).forEach(n=>test(n,tol));ALP=[x,y];return[x,y];}
-function guideDraw(){if(tool!=='mem')return;const S=w=>[w[0]*V.z+V.ox,w[1]*V.z+V.oy];g.save();g.strokeStyle='rgba(28,126,214,.85)';g.lineWidth=1.3;
+function guideDraw(){if(tool!=='mem')return;liveTrk();const S=w=>[w[0]*V.z+V.ox,w[1]*V.z+V.oy];g.save();g.strokeStyle='rgba(28,126,214,.85)';g.lineWidth=1.3;
   trk.forEach(n=>{const s=S(n);g.beginPath();g.moveTo(s[0]-5,s[1]-5);g.lineTo(s[0]+5,s[1]+5);g.moveTo(s[0]+5,s[1]-5);g.lineTo(s[0]-5,s[1]+5);g.stroke();});   /* 잡힌 점 × */
   if(ALP){g.setLineDash([6,4]);const e=S(ALP);[ALN.x,ALN.y].forEach(n=>{if(!n)return;const s=S(n);g.beginPath();g.moveTo(...s);g.lineTo(...e);g.stroke();});}g.restore();}
 /* 한 점 맞춤: 기둥·선 끝 → 선 위 → 모눈 → 줄 맞춤. 반환 [점, 종류] */
@@ -219,9 +227,8 @@ function snapMid(q,p,tol){let b=null,bd=tol;p.hl.forEach(s=>{const m=[(s.pts[0][
 function polySegs(pts){const p=pg(),tol=SNAP/V.z,v=[pts[0],pts[pts.length-1]],segs=[];SEGE=null;   /* 한 획 = 무조건 한 직선 (시작점 → 펜 뗀 곳) */let a=snapPt(v[0],p,tol)[0];
   for(let i=1;i<v.length;i++){let b=v[i];const dx=b[0]-a[0],dy=b[1]-a[1],hor=Math.abs(dy)<Math.abs(dx)*0.22,ver=Math.abs(dx)<Math.abs(dy)*0.22;   /* 약 12° 안쪽이면 곧게 */
     b=gs(b);if(hor)b=[b[0],a[1]];else if(ver)b=[a[0],b[1]];
-    SEGI=null;const nb=snapNode(b,p,tol)||snapMid(b,p,tol*0.5)||snapSegQ(b,p,tol*0.7);SEGE=SEGI;
-    if(nb){ALN={x:null,y:null};ALP=null;}if(nb)b=p.type==='plan'&&hor?[nb[0],a[1]]:p.type==='plan'&&ver?[a[0],nb[1]]:nb;   /* 평면은 곧게 우선, 트러스 입면은 절점 잇기 우선 */
-    else{const al=alignSnap(b,p,tol*0.45);b=hor?[al[0],a[1]]:ver?[a[0],al[1]]:al;}
+    const nb=snapNode(b,p,tol*0.5)||snapSeg(b,p,tol*0.4);   /* 긋는 동안은 안 붙음 — 끝이 기둥·끝점 바로 위면 그 점, 선 바로 위면 그 선에만 */
+    if(nb)b=p.type==='plan'&&hor?[nb[0],a[1]]:p.type==='plan'&&ver?[a[0],nb[1]]:nb;   /* 평면은 곧게 우선, 트러스 입면은 절점 잇기 우선 */
     if(Math.hypot(b[0]-a[0],b[1]-a[1])<tol*0.6)continue;segs.push([a.map(r1),b.map(r1)]);a=b;}
   return segs;}
 function mkPoly(pts){const segs=polySegs(pts),p=pg();if(!segs.length)return;mod();let moved=0;
@@ -351,7 +358,8 @@ $('selbar').onclick=e=>{const a=e.target.closest('[data-sb]');if(!a)return;const
   if(s==='bgok'){tool='mem';save();return ui();}
   if(s==='spec'||s==='len')return;
   if(s==='x')sel=null;else if(s==='del'&&selItem()){mod();p[sel.k].splice(sel.i,1);sel=null;save();}else if(s==='rot'&&selItem()){mod();selItem().r=selItem().r?0:1;save();}ui();};
-addEventListener('keydown',e=>{if((e.key==='Delete'||e.key==='Backspace')&&tool==='sel'&&selItem()&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){mod();pg()[sel.k].splice(sel.i,1);sel=null;save();ui();}});
+addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){const k=e.key.toLowerCase();if(k==='z'||k==='y'){e.preventDefault();return doUndo(k==='z'&&!e.shiftKey);}}   /* Ctrl+Z · Ctrl+Y */
+  if((e.key==='Delete'||e.key==='Backspace')&&tool==='sel'&&selItem()&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){mod();pg()[sel.k].splice(sel.i,1);sel=null;save();ui();}});
 const normVal=s=>{let n=parseFloat(String(s).replace(',','.'));if(!(n>0))return'';if(n>100)n/=1000;return String(Math.round(n*1000)/1000);};   /* 6000 처럼 mm 로 적어도 m 로 */
 
 /* ══ 손글씨 숫자 인식 — $P 점구름 방식(획 순서·방향 무관), 기본 견본 + 내 글씨 견본(학습·고친 것 자동 학습) ══ */
@@ -512,7 +520,7 @@ cv.onpointermove=e=>{const s=[e.offsetX,e.offsetY];
     else if(tool==='dim'){g.lineWidth=2.4;path('#1c7ed6');}
     else if(tool==='mem'){g.lineWidth=3;g.globalAlpha=.25;path(penColor);g.globalAlpha=1;   /* 실제로 들어갈 곧은 선 + 길이 */
       const sg=polySegs(act.pts);g.strokeStyle=penColor;g.lineWidth=10;g.globalAlpha=.85;g.beginPath();sg.forEach(([a,b])=>{g.moveTo(...S(a));g.lineTo(...S(b));});g.stroke();g.globalAlpha=1;
-      const l=sg[sg.length-1];if(l){g.fillStyle='#1c7ed6';sg.forEach(([a,b])=>[a,b].forEach(w=>{const c=S(w);g.fillRect(c[0]-3,c[1]-3,6,6);}));lenLabel(`${lenM(l[0],l[1]).toFixed(1)} m`,...s);if(SEGE)lenLabel('끝: '+segTxt(SEGE),s[0],s[1]+34);guideDraw();}}});};
+      const l=sg[sg.length-1];if(l){g.fillStyle='#1c7ed6';sg.forEach(([a,b])=>[a,b].forEach(w=>{const c=S(w);g.fillRect(c[0]-3,c[1]-3,6,6);}));lenLabel(`${lenM(l[0],l[1]).toFixed(1)} m`,...s);}}});};
 cv.onpointerup=cv.onpointercancel=e=>{if(touches.has(e.pointerId)){touches.delete(e.pointerId);gPrev=null;if(!touches.size&&gBg){gBg=0;save();}}
   if(!act||act.id!==e.pointerId)return;const a=act;act=null;
   if(a.tool0){tool=a.tool0;save();return ui();}   /* S펜 옆 버튼 지우개 끝 → 원래 도구 */
@@ -582,7 +590,7 @@ $('bLeg').onclick=()=>{legOpen=!legOpen;ui();fit();};
 $('tools').onclick=e=>{const b=e.target.closest('[data-tool]');if(b){processInk();tool=b.dataset.tool;if(tool!=='sel')sel=null;ui();}};
 $('bGrid').onclick=()=>{gridSnap=!gridSnap;try{localStorage.setItem('ds_field_grid',gridSnap?'1':'');}catch(e){}toast(gridSnap?'모눈 맞춤 켬 — 1칸 = 1 m, 0.1 m 단위로 붙음':'모눈 맞춤 끔');ui();};
 $('site').oninput=e=>{D.site=e.target.value;save();};
-$('bUndo').onclick=doUndo;$('bFit').onclick=fit;$('bPgSet').onclick=()=>pageDlg();$('bMenu').onclick=()=>menuDlg();
+$('bUndo').onclick=()=>doUndo();$('bRedo').onclick=()=>doUndo(false);$('bFit').onclick=fit;$('bPgSet').onclick=()=>pageDlg();$('bMenu').onclick=()=>menuDlg();
 $('bUp').onclick=()=>addFloor(true);$('bDn').onclick=()=>addFloor(false);$('bAxis').onclick=()=>axisDlg();
 
 /* 대충 찍고 나중에 맞추기: 기둥 x(y) 를 줄로 묶음 (0.8 m 안 = 같은 줄) → 줄 사이 경간을 넣으면 그림 전체를 그 치수로 폄 (중간 부재는 비율대로) */
@@ -638,14 +646,14 @@ function addFloor(up){processInk();sortFloors();const lv=D.floors.map(f=>lvl(f.n
 function menuDlg(){openDlg(`<h3>☰ 메뉴</h3><label>날짜</label><input id="mDate" type="date" value="${esc(D.date)}">
     <div class="row" style="justify-content:flex-start"><button id="mFl">층고표·슬래브</button><button id="mBg">🖼 배경 도면</button><button id="mHw">✍ 글씨 학습</button><button id="mFg">${fingerDraw?'☝ 손가락=그리기 (지금)':'✋ 손가락=화면 이동 (지금)'}</button></div>
     <div class="row" style="justify-content:flex-start"><button id="mMk">${showMk?'부재명 표시 켬':'부재명 표시 끔'}</button><button id="mGh">${showGhost?'👻 아래층 흐리게 보기 켬':'👻 아래층 흐리게 보기 끔'}</button><button id="mLs">${lenSplit?'같은 규격도 길이 다르면 다른 이름 (켬)':'길이 달라도 같은 이름 (규격만)'}</button></div>
-    <div class="row" style="justify-content:flex-start"><button id="mHide">${showMarks?'👁 조사 표시 숨기기':'👁 조사 표시 보이기'}</button><button id="mZip">🗂 조사 사진 ZIP</button><button id="mOpen">📂 저장한 파일 열기</button><button id="mNew">새 현장</button></div>
+    <div class="row" style="justify-content:flex-start"><button id="mHide">${showMarks?'👁 조사 표시 숨기기':'👁 조사 표시 보이기'}</button><button id="mZip">🗂 조사 사진 ZIP</button><button id="mDr">🗂 임시저장 목록</button><button id="mOpen">📂 저장한 파일 열기</button><button id="mNew">새 현장</button></div>
     <small>단위: 치수·층고는 m — 2600 처럼 mm 로 써도 2.6 m 로 바뀝니다 (100 넘으면 mm 로 봄) · 슬래브는 mm · 모눈 1칸 = 1 m · S펜 옆 버튼 누르고 문지르기 = 지우개</small>
     <div class="row"><button id="mOk" class="on">닫기</button></div>`,m=>{const q=s=>m.querySelector(s);
     q('#mDate').onchange=e=>{D.date=e.target.value;save();};q('#mFl').onclick=()=>floorDlg();q('#mBg').onclick=()=>bgDlg();q('#mHw').onclick=()=>hwDlg();
     q('#mFg').onclick=()=>{fingerDraw=!fingerDraw;dlg.close();ui();toast(fingerDraw?'손가락으로도 그립니다 (두 손가락 = 이동·확대)':'손가락은 화면 이동·확대');};
     q('#mMk').onclick=()=>{showMk=!showMk;dlg.close();ui();};q('#mGh').onclick=()=>{showGhost=!showGhost;dlg.close();ui();};q('#mHide').onclick=()=>{showMarks=!showMarks;dlg.close();ui();};q('#mZip').onclick=()=>{dlg.close();zipPhotos();};
     q('#mLs').onclick=()=>{lenSplit=!lenSplit;MKV++;try{localStorage.setItem('ds_field_lensplit',lenSplit?'1':'0');}catch(e){}dlg.close();ui();toast(lenSplit?'같은 규격이라도 길이(경간)가 다르면 G1·G2 로 나눔':'규격만 같으면 같은 이름 (DS-PLAN 과 같음)');};
-    q('#mOpen').onclick=()=>{dlg.close();$('fOpen').value='';$('fOpen').click();};q('#mNew').onclick=()=>{dlg.close();newSite();};q('#mOk').onclick=()=>dlg.close();});}
+    q('#mDr').onclick=()=>draftDlg();q('#mOpen').onclick=()=>{dlg.close();$('fOpen').value='';$('fOpen').click();};q('#mNew').onclick=()=>{dlg.close();newSite();};q('#mOk').onclick=()=>dlg.close();});}
 
 /* 🗂 조사 사진 모아 받기: 표시 이름·번호 그대로 (SH-01.jpg, FS-02.jpg …) + 따로 찍은 사진 P3.jpg */
 function zipBlob(files){const T=[...Array(256)].map((_,n)=>{let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;return c>>>0;}),crc=u=>{let c=~0;for(let i=0;i<u.length;i++)c=T[(c^u[i])&255]^(c>>>8);return(~c)>>>0;};
@@ -842,7 +850,24 @@ function checkOut(){const o=[],seen={};D.pages.forEach(p=>{const nm=flLabel(p);i
 /* 내보내기 준비: 빠진 것 확인 → 파일 이름·내용 */
 function outFile(verb){processInk();if(edAt)commitEd(false);const w=checkOut();if(w.length&&!confirm('확인할 것:\n · '+w.join('\n · ')+`\n\n그래도 ${verb}?`))return null;
   return{name:`${(D.site||'현장').replace(/[\/:*?"<>|]/g,'_')}_${D.date}_현장야장.json`,json:JSON.stringify(buildOut())};}
-function download(o){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([o.json],{type:'application/json'}));a.download=o.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
+function saveBlob(b,name){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
+const download=o=>saveBlob(new Blob([o.json],{type:'application/json'}),o.name);
+/* JPEG 를 그대로 담는 PDF (라이브러리 없이) — 쪽마다 A4, 그림 모양 따라 가로·세로 */
+function pdfBlob(jpgs){const enc=new TextEncoder(),parts=[],offs=[];let len=0;const put=x=>{const b=typeof x==='string'?enc.encode(x):x;parts.push(b);len+=b.length;},obj=(n,t)=>{offs[n]=len;put(`${n} 0 obj\n${t}\nendobj\n`);};
+  put('%PDF-1.4\n');const n=jpgs.length;obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,`<< /Type /Pages /Kids [${jpgs.map((_,i)=>`${3+i*3} 0 R`).join(' ')}] /Count ${n} >>`);
+  jpgs.forEach((j,i)=>{const k=3+i*3,W=j.w>j.h?842:595,H=j.w>j.h?595:842,sc=Math.min((W-40)/j.w,(H-40)/j.h),w=j.w*sc,h=j.h*sc,cs=`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${((W-w)/2).toFixed(2)} ${((H-h)/2).toFixed(2)} cm /I Do Q`;
+    obj(k,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /I ${k+1} 0 R >> >> /Contents ${k+2} 0 R >>`);
+    offs[k+1]=len;put(`${k+1} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${j.w} /Height ${j.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${j.b.length} >>\nstream\n`);put(j.b);put('\nendstream\nendobj\n');
+    obj(k+2,`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`);});
+  const xr=len,N=3+n*3;put(`xref\n0 ${N}\n0000000000 65535 f \n`+offs.slice(1).map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${N} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`);
+  return new Blob(parts,{type:'application/pdf'});}
+async function pdfOut(){processInk();if(edAt)commitEd(false);const S=buildOut().shots.filter(Boolean);if(!S.length)return toast('그린 것이 없습니다');toast('PDF 만드는 중…');
+  const J=[];for(let i=0;i<S.length;i++){const im=new Image();await new Promise((res,rej)=>{im.onload=res;im.onerror=rej;im.src=S[i].img||S[i];});
+    const T=56,c=document.createElement('canvas');c.width=im.width;c.height=im.height+T;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+    x.fillStyle='#1d2733';x.font='bold 22px sans-serif';x.textBaseline='middle';x.fillText(`${D.site||'현장'}   ${D.date}`,12,T/2);x.textAlign='right';x.font='16px sans-serif';x.fillText(`${i+1} / ${S.length}  · DS 현장야장`,c.width-12,T/2);
+    x.fillRect(0,T-2,c.width,2);x.drawImage(im,0,T);J.push({w:c.width,h:c.height,b:urlBytes(c.toDataURL('image/jpeg',.9))});}
+  const name=`${(D.site||'현장').replace(/[\/:*?"<>|]/g,'_')}_${D.date}_현장야장.pdf`;saveBlob(pdfBlob(J),name);toast(`PDF 저장: ${name} (다운로드 폴더) · 쪽 ${J.length}장`);}
+$('bPdf').onclick=()=>pdfOut().catch(e=>toast('PDF 실패: '+e.message));
 $('bSave').onclick=()=>{const o=outFile('저장할까요');if(!o)return;download(o);toast(`저장됨: ${o.name} — 이 탭의 DS-PLAN 은 [열기] → 최근 파일 맨 위 · PC 로는 📤 보내기`);};
 /* 📤 보내기: 안드로이드 공유 창 (카톡 나에게 · Quick Share 로 PC · 드라이브 · 메일) — json 이 안 되는 기기는 .txt 로 */
 $('bShare').onclick=async()=>{const o=outFile('보낼까요');if(!o)return;
@@ -852,9 +877,24 @@ $('bShare').onclick=async()=>{const o=outFile('보낼까요');if(!o)return;
   download(o);toast('이 기기는 바로 보내기를 못 해서 저장했습니다 (다운로드 폴더)');};
 $('fOpen').onchange=async e=>{const f=e.target.files[0];if(!f)return;let d;try{d=JSON.parse(await f.text());}catch(err){return alert('JSON 을 읽지 못했습니다');}
   if(!d||d.fmt!=='DS-FIELD-1'||!Array.isArray(d.pages)||!d.pages.length)return alert('현장야장 파일(DS-FIELD-1)이 아닙니다 — 지금 그림은 그대로입니다');
-  if(!confirm('지금 그림을 이 파일로 바꿀까요? (지금 것은 먼저 저장해 두세요)'))return;
-  D=fromFile(d);P=0;penId=D.pal[0].id;undo=[];save();ui();fit();};
-function newSite(){if(!confirm('새 현장을 시작할까요?\n지금 그림은 지워집니다 — 먼저 [DS-PLAN용 저장] 하세요.'))return;D=newDoc();P=0;penId='w1';undo=[];save();ui();fit();};
+  if(!confirm('지금 그림을 이 파일로 바꿀까요? (지금 것은 📥 임시저장 목록에 넣어 둡니다)'))return;
+  if(hasWork())await draftSave(1);D=fromFile(d);P=0;penId=D.pal[0].id;undo=[];redo=[];save();ui();fit();toast('열었습니다 — 전에 그리던 것은 🗂 임시저장 목록에');};
+async function newSite(){if(!confirm('새 현장을 시작할까요?\n지금 그림은 📥 임시저장 목록에 넣어 둡니다.'))return;if(hasWork())await draftSave(1);D=newDoc();P=0;penId='w1';undo=[];redo=[];trk=[];save();ui();fit();};
+/* 📥 임시저장: 앱 안에 현장마다 한 칸 (다시 누르면 그 칸을 덮어씀) — ☰ → 🗂 임시저장 목록에서 다시 열기 */
+const hasWork=()=>D.pages.some(p=>p.cols.length||p.hl.length||p.pen.length||p.marks.length||p.photos.length||p.dims.length);
+async function draftSave(quiet){processInk();if(!D.id)D.id='s'+Date.now().toString(36);const e={id:D.id,name:D.site||'(현장명 없음)',date:D.date,t:Date.now()};
+  try{await idbPut('d:'+D.id,D);const L=((await idbGetK('drafts'))||[]).filter(x=>x.id!==D.id);L.push(e);await idbPut('drafts',L);save();if(!quiet)toast(`📥 임시저장 — ${e.name} · ☰ → 🗂 임시저장 목록에서 다시 엶`);}
+  catch(err){toast('임시저장 실패 — 💾 저장으로 파일을 받아 두세요: '+err);throw err;}}
+async function draftDlg(){const L=((await idbGetK('drafts'))||[]).sort((a,b)=>b.t-a.t),tm=t=>new Date(t).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  openDlg(`<h3>🗂 임시저장 목록</h3>${L.length?L.map(x=>`<div class="row" style="justify-content:flex-start;align-items:center"><div style="flex:1;font-size:14px"><b>${esc(x.name)}</b><br><small>${esc(x.date)} · ${tm(x.t)} 저장${x.id===D.id?' · 지금 그리는 것':''}</small></div><button data-do="${esc(x.id)}" class="on">열기</button><button data-dd="${esc(x.id)}">지우기</button></div>`).join('')
+    :'<small>아직 없습니다 — 위의 📥 임시저장을 누르면 여기에 쌓입니다</small>'}<div class="row"><button id="drX">닫기</button></div>`,m=>{
+    m.querySelector('#drX').onclick=()=>dlg.close();
+    m.onclick=async e=>{const o=e.target.closest('[data-do]'),x=e.target.closest('[data-dd]');
+      if(o){const id=o.dataset.do,doc=await idbGetK('d:'+id);if(!doc)return toast('없어진 임시저장입니다');
+        if(id===D.id){if(!confirm('임시저장했던 때로 되돌릴까요? (그 뒤에 그린 것은 없어짐)'))return;}else if(hasWork())await draftSave(1);   /* 지금 것은 제 칸에 먼저 넣어 둠 */
+        D=migrate(doc);P=0;penId=D.pal[0].id;undo=[];redo=[];trk=[];sel=null;dlg.close();save();ui();fit();toast(`열었습니다 — ${D.site||'(현장명 없음)'}`);}
+      if(x){const it=L.find(q=>q.id===x.dataset.dd);if(!it||!confirm(`「${it.name}」 임시저장을 지울까요?`))return;await idbPut('d:'+it.id);await idbPut('drafts',L.filter(q=>q!==it));draftDlg();}};});}
+$('bDraft').onclick=()=>draftSave().catch(()=>{});
 
 addEventListener('resize',resize);
 /* 홈 화면 앱(PWA): https 주소로 열었을 때만 — 오프라인 실행, 자동보관이 지워지지 않게 */

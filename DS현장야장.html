@@ -84,7 +84,7 @@ const SPECS={col:['400x400','500x500','500x400','400x500','600x600','300x300','�
   wall:['200','100','190','RC150','RC200','RC250','RC300'],truss:['P-48.6x2.3','P-60.5x3.2','P-76.3x3.2','L-50x50x6','L-65x65x6','ㄷ100x50']};
 const KC={wall:['#343a40','#868e96','#795548','#495057'],col:['#e03131','#c2255c','#f76707','#9c36b5','#d6336c'],beam:['#f5c518','#4dabf7','#9775fa','#3bc9db','#ff8787','#69db7c','#a9743b','#2b8a7e','#e599f7','#c9a227'],truss:['#ae3ec9','#7048e8','#1098ad','#0b7285']};
 const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (위에서 보|벽|트러스 · 규격 고름) · 한 획 = 한 직선 부재 · 펜을 기둥에 대었다가 보 위로 옮기면 「기둥에서 ○ m」(0.1 m 단위) · 기둥 규격 다르면 다른 색으로 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
-  dim:'부재 톡 = 길이 고치기 (그 부재 끝의 기둥 줄이 옮겨짐) · 바깥 치수 숫자 톡 = 그 간격 고치기 · 부재 옆에 숫자를 써도 됨 · 치수는 최외곽에 자동 · 단위 m (6000 = 6)',
+  dim:'부재 톡 = 길이 고치기 (그 부재 끝의 기둥 줄이 옮겨짐) · 바깥 치수 숫자 톡 = 그 간격 고치기 · 부재 옆에 숫자를 써도 됨 · 치수는 최외곽에 자동 (기둥 줄, 없으면 벽 줄) · 부재 길이는 부재 가운데 (사선도) · 단위 m (6000 = 6)',
   memo:'자유 메모 (실명·Mirror·특기사항 등 — 모델엔 안 들어가고 DS-PLAN 배경 그림으로 감)',mark:'조사 종류 고르고 위치 톡 → 바로 카메라 (찍은 사진은 그 표시 옆에)',photo:'사진 찍을 위치 톡 → 카메라',del:'지울 것을 톡 또는 문지르기',
   sel:'톡 = 선택 → 끌어서 옮기기 · 선 끝 동그라미 끌기 = 늘이기/줄이기 · 아래 색 버튼 = 규격 바꾸기 · 기둥을 옮기면 붙은 선도 따라옴',
   bgadj:'배경 맞추기 — 펜·한 손가락으로 끌기 = 이동 · 두 손가락 = 크기·회전'};
@@ -132,13 +132,15 @@ function doUndo(back=true){const A=back?undo:redo,B=back?redo:undo,s=A.pop();if(
 function migrate(d){if(!d.floors){d.floors=[];d.slab=d.slab||'';d.pages.forEach(p=>{if(p.type!=='plan')return;if(p.name&&!d.floors.some(f=>f.n===p.name))d.floors.push({n:p.name,h:p.h||''});
     if(!d.slab&&p.slab)d.slab=p.slab;p.fl=p.name?[p.name]:[];});
   d.pages.forEach(p=>{if(p.same){const t=d.pages.find(q=>q!==p&&q.fl&&q.fl.includes(p.same));if(t)t.fl.push(...p.fl);}});d.pages=d.pages.filter(p=>!(p.same&&d.pages.some(q=>q!==p&&q.fl&&q.fl.includes(p.same))));}
-  d.pages.forEach(p=>{p.fl=p.fl||[];['hl','cols','dims','pen','marks','photos'].forEach(k=>p[k]=p[k]||[]);delete p.same;delete p.h;delete p.slab;});d.imgs=d.imgs||{};return d;}
+  d.pages.forEach(p=>{p.fl=p.fl||[];['hl','cols','dims','pen','marks','photos'].forEach(k=>p[k]=p[k]||[]);p.dims=p.dims.filter(x=>!drawnDim(x));delete p.same;delete p.h;delete p.slab;});d.imgs=d.imgs||{};return d;}
 
 /* ── 그리기 ── */
 const cv=$('cv'),g=cv.getContext('2d');let dpr=1;
 function resize(){dpr=devicePixelRatio||1;cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;if(!resize.w&&cv.clientWidth){resize.w=1;return fit();}draw();}   /* 숨은 채 열렸으면 처음 보일 때 맞춤 */
 const toW=(x,y)=>[(x-V.ox)/V.z,(y-V.oy)/V.z];
 function dimPts(d){const hor=Math.abs(d.b[0]-d.a[0])>=Math.abs(d.b[1]-d.a[1]);return{hor,P:d.t.map(t=>[d.a[0]+(d.b[0]-d.a[0])*t,d.a[1]+(d.b[1]-d.a[1])*t])};}
+/* 저장 파일 속 치수 = 그때 그림 길이로 낸 자동 치수 → 다시 열 때 버림 (안 버리면 굳어서 새 자동 치수와 겹침) · 손으로 고친 값이 든 치수만 남김 */
+function drawnDim(d){const{hor,P:Q}=dimPts(d),k=hor?0:1;return d.v.every((v,i)=>v!==''&&Math.abs(v-Math.abs(Q[i+1][k]-Q[i][k])/GRID)<0.006);}
 function dimLabels(d,z){const{hor,P:Q}=dimPts(d),o=[];for(let i=0;i+1<Q.length;i++)o.push([(Q[i][0]+Q[i+1][0])/2-(hor?0:22/z),(Q[i][1]+Q[i+1][1])/2-(hor?14/z:0)]);return o;}
 /* 기둥 모양: 규격 글자에서 (Ø = 원, 가로x세로 = 그 비율 직사각형), r = 90° 돌림 */
 function colGeom(c){const s=String(pal(c.p).spec||''),n=(s.match(/\d+(\.\d+)?/g)||[]).map(Number);   /* mm */
@@ -151,7 +153,10 @@ function render(c,p,z,ox,oy){const u=1/z;c.save();c.translate(ox,oy);c.scale(z,z
   p.cols.forEach(q=>{const k=pal(q.p),G=colGeom(q),mx=Math.max(G.w,G.h),S=Math.max(mx*GRID/1000,32*u)/mx,w=G.w*S,h=G.h*S;   /* 실제 크기(1 m = 모눈 1칸), 너무 작으면 32px */
     c.fillStyle='rgba(255,255,255,.85)';c.strokeStyle=k.c;c.lineWidth=3.6*u;c.beginPath();
     if(G.circ)c.arc(q.x,q.y,w/2,0,7);else c.rect(q.x-w/2,q.y-h/2,w,h);c.fill();c.stroke();});
-  c.font=`bold ${17*u}px sans-serif`;c.textAlign='center';c.textBaseline='middle';
+  c.textAlign='center';c.textBaseline='middle';c.font=`bold ${12*u}px sans-serif`;c.lineWidth=3*u;c.strokeStyle='#fff';c.fillStyle='#1c4fd6';   /* 부재 가운데 길이 (사선도) — 부재명 반대쪽 · 짧아서 안 들어가면 생략 */
+  if(p.type!=='memo')p.hl.forEach(s=>{const[a,b]=s.pts,dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);if(L*z<44)return;let an=Math.atan2(dy,dx);if(an>=1.56)an-=Math.PI;else if(an<-1.58)an+=Math.PI;   /* 글자는 늘 왼→오른 · 아래→위 */
+    const t=fmtM(L/GRID);c.save();c.translate((a[0]+b[0])/2+dy/L*14*u,(a[1]+b[1])/2-dx/L*14*u);c.rotate(an);c.strokeText(t,0,0);c.fillText(t,0,0);c.restore();});
+  c.font=`bold ${17*u}px sans-serif`;
   p.dims.concat(autoDims(p)).forEach(d=>{const{hor,P:Q}=dimPts(d);c.strokeStyle='#e03131';c.lineWidth=1.6*u;c.beginPath();c.moveTo(...d.a);c.lineTo(...d.b);
     Q.forEach(q=>{if(hor){c.moveTo(q[0],q[1]-7*u);c.lineTo(q[0],q[1]+7*u);}else{c.moveTo(q[0]-7*u,q[1]);c.lineTo(q[0]+7*u,q[1]);}});c.stroke();
     dimLabels(d,z).forEach((L,i)=>{const v=d.v[i],e=d.est&&d.est[i];c.fillStyle=!v?'#e03131':e?'#8a96a6':'#1c4fd6';c.fillText(!v?'?':e?'≈'+v:v,L[0],L[1]);});});   /* 회색 ≈ = 그린 크기로 잰 값 */
@@ -166,7 +171,7 @@ function render(c,p,z,ox,oy){const u=1/z;c.save();c.translate(ox,oy);c.scale(z,z
 /* 아래층 (예: 2F 쪽이면 1F 쪽) — 흐린 회색으로 밑에 깔고, 기둥은 그 자리에 붙음 */
 function belowPage(p){if(!p||p.type!=='plan')return null;const f=pageFl(p);if(!f.length)return null;const lo=Math.min(...f.map(lvl));let best=null,bv=-1e9;
   D.pages.forEach(q=>{if(q===p||q.type!=='plan')return;const g=pageFl(q);if(!g.length)return;const hi=Math.max(...g.map(lvl));if(hi<lo&&hi>bv){bv=hi;best=q;}});return best;}
-const ghostPg=()=>showGhost&&belowPage(pg());
+const ghostPg=()=>showGhost&&tool!=='dim'&&belowPage(pg());   /* 📏 길이 볼 때는 이 층만 */
 const withBelow=p=>{const b=ghostPg();return b?{cols:p.cols.concat(b.cols),hl:p.hl}:p;};   /* 기둥 맞춤에 아래층 기둥도 */
 function ghostDraw(b){const u=1/V.z;g.save();g.translate(V.ox,V.oy);g.scale(V.z,V.z);g.globalAlpha=.3;g.strokeStyle=g.fillStyle='#7d8a99';g.lineCap='round';
   b.hl.forEach(s=>{g.lineWidth=(pal(s.p).kind==='wall'?13:8)*u;g.beginPath();g.moveTo(...s.pts[0]);g.lineTo(...s.pts[1]);g.stroke();});
@@ -277,16 +282,17 @@ function colSnap(q,p,cols,tol){const n=snapNode(q,p,tol);if(n){ALN={x:null,y:nul
 
 
 
-/* 최외곽 자동 치수: 기둥·부재 끝 자리마다 눈금(경간) + 전체 길이 — 값 = 그림 길이 (부재 톡 → 길이 고치면 따라 바뀜) */
+/* 최외곽 자동 치수: 기둥 줄(없으면 벽 줄)마다 눈금 + 전체 길이 — 값 = 그림 길이 (부재 톡 → 길이 고치면 따라 바뀜) · 부재 하나하나 길이는 부재 가운데에 */
 const fmtM=m=>String(Math.round(m*100)/100);
-function autoAxes(p){const N=nodes({cols:p.cols,hl:p.type==='plan'?p.hl.filter(s=>pal(s.p).kind!=='truss'):p.hl}),u=a=>{a.sort((x,y)=>x-y);const o=[];a.forEach(v=>{if(!o.length||v-o[o.length-1]>10)o.push(v);});return o;};
-  const cx=u(p.cols.map(c=>c.x)),cy=u(p.cols.map(c=>c.y)),ax=u(N.map(n=>n[0])),ay=u(N.map(n=>n[1]));   /* 축선 = 기둥 줄 (기둥 없으면 부재 끝) */
-  return{xs:cx.length>=2?cx:ax,ys:cy.length>=2?cy:ay,ax,ay};}
+function autoAxes(p){const plan=p.type==='plan',H=plan?p.hl.filter(s=>pal(s.p).kind!=='truss'):p.hl,N=nodes({cols:p.cols,hl:H}),u=a=>{a.sort((x,y)=>x-y);const o=[];a.forEach(v=>{if(!o.length||v-o[o.length-1]>10)o.push(v);});return o;};
+  const cx=u(p.cols.map(c=>c.x)),cy=u(p.cols.map(c=>c.y)),ax=u(N.map(n=>n[0])),ay=u(N.map(n=>n[1])),W=H.filter(s=>pal(s.p).kind==='wall'),LW=W.length?W:H,
+    ln=(k,A)=>plan?u([A[0],A[A.length-1]].concat(LW.filter(s=>Math.abs(s.pts[0][k]-s.pts[1][k])<0.6).map(s=>s.pts[0][k]))):A;   /* 평면: 벽 줄 (벽 없으면 보 줄) + 양 끝 · 입면: 부재 끝 */
+  return{xs:cx.length>=2?cx:ln(0,ax),ys:cy.length>=2?cy:ln(1,ay),ax,ay};}   /* 축선 = 기둥 줄 */
 function autoDims(p){if(p.type==='memo')return[];const{xs,ys,ax,ay}=autoAxes(p),out=[];if(!ax.length)return out;
-  const mk=(hor,cs,off,det)=>{if(cs.length<2)return;const c0=cs[0],c1=cs[cs.length-1];out.push(Object.assign({a:hor?[c0,off]:[off,c0],b:hor?[c1,off]:[off,c1],t:cs.map(c=>(c-c0)/(c1-c0)),v:cs.slice(1).map((c,i)=>fmtM((c-cs[i])/GRID)),auto:1},det?{detail:1}:{}));};
-  const Y0=ay[0],X0=ax[0],dx=ax.length>xs.length,dy=ay.length>ys.length;   /* 안쪽: 부재 자리(화면만) · 가운데: 기둥 줄 · 바깥: 전체 */
-  if(dx)mk(true,ax,Y0-36,1);mk(true,xs,Y0-(dx?66:36));if(xs.length>2)mk(true,[xs[0],xs[xs.length-1]],Y0-(dx?96:66));
-  if(dy)mk(false,ay,X0-36,1);mk(false,ys,X0-(dy?66:36));if(ys.length>2)mk(false,[ys[0],ys[ys.length-1]],X0-(dy?96:66));return out;}
+  const mk=(hor,cs,off)=>{if(cs.length<2)return;const c0=cs[0],c1=cs[cs.length-1];out.push({a:hor?[c0,off]:[off,c0],b:hor?[c1,off]:[off,c1],t:cs.map(c=>(c-c0)/(c1-c0)),v:cs.slice(1).map((c,i)=>fmtM((c-cs[i])/GRID)),auto:1});};
+  const Y0=ay[0],X0=ax[0];   /* 안쪽: 기둥(벽) 줄 · 바깥: 전체 */
+  mk(true,xs,Y0-36);if(xs.length>2)mk(true,[xs[0],xs[xs.length-1]],Y0-66);
+  mk(false,ys,X0-36);if(ys.length>2)mk(false,[ys[0],ys[ys.length-1]],X0-66);return out;}
 /* 부재 길이 고치기: 오른쪽(아래쪽) 끝이 있는 줄(같은 x 또는 y)을 통째로 옮김 — 나머지는 그대로 */
 function moveLine(p,k,from,to){const F=q=>{if(Math.abs(q[k]-from)<0.6)q[k]=to;},FO=o=>{const q=[o.x,o.y];F(q);o.x=q[0];o.y=q[1];};p.cols.forEach(FO);p.marks.forEach(FO);p.photos.forEach(FO);p.hl.forEach(h=>h.pts.forEach(F));MKV++;}
 function setLen(p,s,m){const[a,b]=s.pts,dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy),tg=m*GRID;if(!(m>0)||L<1)return false;mod();
@@ -816,7 +822,7 @@ function shot(p,legend){const B=bounds(p);if(!B)return null;const pad=30,w=B[2]-
 const rotSpec=s=>{const m=String(s).match(/^\s*(\d+(?:\.\d+)?)\s*[xX×*]\s*(\d+(?:\.\d+)?)\s*$/);return m?m[2]+'x'+m[1]:null;};
 /* 앱 모양 → DS-FIELD-1: 층 여러 개인 평면은 첫 층에 그림, 나머지 층은 same 쪽으로 펼침 · 돌린 기둥은 규격 가로세로 바꾼 색으로 */
 function buildOut(){let pn=Math.max(0,...D.pages.flatMap(x=>x.photos.map(q=>q.no)))+1;const pal=D.pal.map(k=>({id:k.id,kind:k.kind,spec:k.spec,c:k.c})),pages=[],shots=[],imgs={},hOf=n=>(D.floors.find(f=>f.n===n)||{}).h||'';
-  D.pages.forEach(p0=>{const p=JSON.parse(JSON.stringify(p0));p.dims.forEach(d=>{delete d.ink;delete d.est;});p.dims=p.dims.concat(autoDims(p0).filter(d=>!d.detail).map(d=>{delete d.auto;return d;}));p.hl.forEach(h=>delete h.L);
+  D.pages.forEach(p0=>{const p=JSON.parse(JSON.stringify(p0));p.dims.forEach(d=>{delete d.ink;delete d.est;});p.dims=p.dims.concat(autoDims(p0).map(d=>{delete d.auto;return d;}));p.hl.forEach(h=>delete h.L);
     p.cols=p.cols.map(c=>{if(!c.r)return c;const k=pal.find(q=>q.id===c.p),rs=k&&rotSpec(k.spec);if(!rs)return c;const id=c.p+'~r';
       if(!pal.some(q=>q.id===id))pal.push({id,kind:'col',spec:rs,c:k.c});return Object.assign({},c,{p:id});});
     const used=D.pal.filter(k=>p0.hl.some(s=>s.p===k.id)||p0.cols.some(c=>c.p===k.id)),leg=used.map(k=>[k.c,`${KIND[k.kind]}  ${k.spec||'(규격 없음)'}`]);

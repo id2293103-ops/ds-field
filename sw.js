@@ -15,6 +15,7 @@ self.addEventListener('fetch', e => {
     const net = fetch(e.request, page ? { cache: 'no-store' } : {}).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; });
     e.waitUntil(net.catch(() => {}));
     if (!page) return hit || net.catch(() => Response.error());
+    if (e.request.mode !== 'navigate') return net;   // 새 판 확인: 느려도 저장본으로 대신하지 않음 (저장본 = 지금 판이라 새 판을 못 알아챔)
     const late = new Promise(res => setTimeout(res, 3000, null));
     const r = await Promise.race([net.catch(() => null), late]);
     return (r && r.ok) ? r : (hit || (await c.match('./DS현장야장.html')) || net);

@@ -647,7 +647,8 @@ function addFloor(up){processInk();sortFloors();const lv=D.floors.map(f=>lvl(f.n
   if(!D.floors.some(f=>f.n===n))D.floors.push({n,h:ref?ref.h:''});sortFloors();
   const pl=D.pages.map((p,i)=>p.type==='plan'?i:-1).filter(i=>i>=0),at=up?(pl.length?pl[pl.length-1]+1:D.pages.length):(pl.length?pl[0]:0);
   D.pages.splice(at,0,newPage('plan','',[n]));P=at;sel=null;save();ui();fit();toast(n+' 추가 — '+(ghostPg()?'흐린 회색 = 아래층 · 📐 → ⇩ 아래층 기둥 가져오기':'비슷한 층이면 ⚙ 쪽 → 쪽 복제')+' / 층고는 ☰ → 층고표');}
-function menuDlg(){openDlg(`<h3>☰ 메뉴</h3><label>날짜</label><input id="mDate" type="date" value="${esc(D.date)}">
+const appVer=document.lastModified.replace(/^(\d+\/\d+)\/\d+ (\d+:\d+):\d+$/,'$1 $2');   /* 앱 판 = 서버에 올라간 시각 */
+function menuDlg(){openDlg(`<h3>☰ 메뉴 <span style="font-size:12px;font-weight:400;color:#6b7a8a">앱 판 ${appVer}</span></h3><label>날짜</label><input id="mDate" type="date" value="${esc(D.date)}">
     <div class="row" style="justify-content:flex-start"><button id="mFl">층고표·슬래브</button><button id="mBg">🖼 배경 도면</button><button id="mHw">✍ 글씨 학습</button><button id="mFg">${fingerDraw?'☝ 손가락=그리기 (지금)':'✋ 손가락=화면 이동 (지금)'}</button></div>
     <div class="row" style="justify-content:flex-start"><button id="mMk">${showMk?'부재명 표시 켬':'부재명 표시 끔'}</button><button id="mGh">${showGhost?'👻 아래층 흐리게 보기 켬':'👻 아래층 흐리게 보기 끔'}</button><button id="mLs">${lenSplit?'같은 규격도 길이 다르면 다른 이름 (켬)':'길이 달라도 같은 이름 (규격만)'}</button></div>
     <div class="row" style="justify-content:flex-start"><button id="mHide">${showMarks?'👁 조사 표시 숨기기':'👁 조사 표시 보이기'}</button><button id="mZip">🗂 조사 사진 ZIP</button><button id="mDr">🗂 임시저장 목록</button><button id="mOpen">📂 저장한 파일 열기</button><button id="mNew">새 현장</button></div>
@@ -908,7 +909,7 @@ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catc
 async function checkUpdate(){if(!/^https?:/.test(location.protocol)||$('bUpd'))return;
   try{const t=(await (await fetch(location.pathname,{cache:'no-store'})).text()).replace(/\r\n/g,'\n'),s=t.slice(t.indexOf('<script>')+8,t.lastIndexOf('<\/script>'));   /* <\/ = html 안에서 스크립트가 끊기지 않게 */
     if(s.length>1000&&!$('bUpd')&&s!==document.scripts[document.scripts.length-1].textContent){const b=document.createElement('button');b.id='bUpd';b.className='on';b.textContent='⟳ 새 판 적용';
-      b.onclick=async()=>{processInk();try{await idbSet(D);}catch(e){}location.reload();};$('top').insertBefore(b,$('bSave'));toast('새 판이 나왔습니다 — 위의 [⟳ 새 판 적용]을 누르세요');}}catch(e){}}
+      b.onclick=async()=>{processInk();try{await idbSet(D);}catch(e){}location.reload();};$('top').insertBefore(b,$('site'));$('top').scrollLeft=0;toast('새 판이 나왔습니다 — 위의 [⟳ 새 판 적용]을 누르세요');}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});setInterval(checkUpdate,36e5);setTimeout(checkUpdate,8000);
 let instEv=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();instEv=e;$('bInst').style.display='';});
 $('bInst').onclick=()=>{if(!instEv)return;instEv.prompt();instEv.userChoice.finally(()=>{instEv=null;$('bInst').style.display='none';});};

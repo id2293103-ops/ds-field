@@ -84,7 +84,7 @@ const SPECS={col:['400x400','500x500','500x400','400x500','600x600','300x300','�
   beam:['300x600','300x500','300x700','350x600','400x600','400x700','250x500','200x400','300x450','H-300x150','H-350x175','H-400x200','H-450x200','H-500x200','ㄷ150x75'],
   wall:['200','100','190','RC150','RC200','RC250','RC300'],truss:['P-48.6x2.3','P-60.5x3.2','P-76.3x3.2','L-50x50x6','L-65x65x6','ㄷ100x50']};
 const KC={wall:['#343a40','#868e96','#795548','#495057'],col:['#e03131','#c2255c','#f76707','#9c36b5','#d6336c'],beam:['#f5c518','#4dabf7','#9775fa','#3bc9db','#ff8787','#69db7c','#a9743b','#2b8a7e','#e599f7','#c9a227'],truss:['#ae3ec9','#7048e8','#1098ad','#0b7285']};
-const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (위에서 보|벽|트러스 · 규격 고름) · 한 획 = 한 부재 (둥글게 그으면 곡선) · 펜을 기둥에 대었다가 보 위로 옮기면 「기둥에서 ○ m」(0.1 m 단위) · 기둥 규격 다르면 다른 색으로 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
+const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (위에서 보|벽|트러스 · 규격 고름) · 한 획 = 한 부재 (둥글게 그으면 곡선) · 가로·세로는 곧게, 사선은 15° 단위, 길이는 0.1 m 단위 · 펜을 기둥에 대었다가 보 위로 옮기면 「기둥에서 ○ m」(0.1 m 단위) · 기둥 규격 다르면 다른 색으로 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
   dim:'부재 톡 = 길이 고치기 (그 부재 끝의 기둥 줄이 옮겨짐) · 바깥 치수 숫자 톡 = 그 간격 고치기 · 부재 옆에 숫자를 써도 됨 · 치수는 최외곽에 자동 (기둥 줄, 없으면 벽 줄) · 부재 길이는 부재 가운데 (사선도) · 단위 m (6000 = 6)',
   memo:'자유 메모 (실명·Mirror·특기사항 등 — PDF·캐드 도면에 그린 그대로 들어감)',mark:'조사 종류 고르고 위치 톡 → 바로 카메라 (찍은 사진은 그 표시 옆에)',photo:'사진 찍을 위치 톡 → 카메라',del:'지울 것을 톡 또는 문지르기',
   sel:'톡 = 선택 → 끌어서 옮기기 · 선 끝 동그라미 끌기 = 늘이기/줄이기 · ◇ 끌기 = 곡선으로 휘기 · 아래 색 버튼 = 규격 바꾸기 · 기둥을 옮기면 붙은 선도 따라옴',
@@ -233,7 +233,11 @@ function guideDraw(){if(tool!=='mem')return;liveTrk();const S=w=>[w[0]*V.z+V.ox,
 /* 한 점 맞춤: 가까운 기둥 중심·부재 끝 → 펜이 선에 닿아 있으면 선 위 → 모눈(켰을 때). 반환 [점, 종류] */
 function snapPt(q,p,tol){SEGI=null;let n=snapNode(q,p,tol);if(n)return[n,'node'];n=snapSegQ(q,p,tol*0.5)||snapSeg(q,p,tol*0.5,1);if(n)return[n,'seg'];return[gs(q),gridSnap?'grid':'free'];}
 const SNAP=16;   /* 화면 px — 이 안이면 붙음 */
-const ORTHO=Math.tan(5*Math.PI/180),nearAxis=(a,b)=>Math.abs(a)<Math.max(Math.abs(b)*ORTHO,6/V.z);   /* 가로·세로로 곧게 펴는 범위: 5° 안 (짧은 선은 손떨림 6 px) — 그 밖은 그은 각도 그대로 */
+const ORTHO=0.22,nearAxis=(a,b)=>Math.abs(a)<Math.max(Math.abs(b)*ORTHO,6/V.z);   /* 가로·세로로 곧게 펴는 범위: 약 12° 안 (짧은 선은 손떨림 6 px) */
+/* 펜 뗀 곳 → 시작점에서 곧게: 가로·세로(12° 안) 아니면 15° 단위 각도 · 길이는 0.1 m 단위 — [끝점, 가로?, 세로?] */
+function polar(a,b){const dx=b[0]-a[0],dy=b[1]-a[1],hor=nearAxis(dy,dx),ver=!hor&&nearAxis(dx,dy),q=v=>Math.round(v/4)*4,L=q(Math.hypot(dx,dy));   /* 가로·세로는 펜 뗀 자리의 x(y) 그대로 0.1 m 로 */
+  if(hor)return[[a[0]+Math.sign(dx)*q(Math.abs(dx)),a[1]],true,false];if(ver)return[[a[0],a[1]+Math.sign(dy)*q(Math.abs(dy))],false,true];
+  const an=Math.round(Math.atan2(dy,dx)/(Math.PI/12))*(Math.PI/12);return[[a[0]+L*Math.cos(an),a[1]+L*Math.sin(an)],false,false];}
 /* 한 획 → 꺾인 곳마다 직선 (가로/세로는 곧게, 끝은 기둥·선 끝에 붙임) — 그리는 중 미리보기에도 씀 */
 
 /* 선 위에 붙기: 기준점(펜을 대 본 기둥·끝, 없으면 가까운 끝)에서 0.1 m 단위 거리로 — SEGI = {기준, m, 기둥?} */
@@ -246,9 +250,8 @@ function snapSegQ(q,p,tol){let bt=null,bd=tol;p.hl.forEach(s=>{if(s.h)return;con
   SEGI={ref:[ref[0],ref[1]],m:Math.abs(np-rp)/GRID,col:p.cols.some(k=>Math.hypot(k.x-ref[0],k.y-ref[1])<1)};return[r1(a[0]+ux*np),r1(a[1]+uy*np)];}
 const segTxt=I=>`${I.col?'기둥':'끝'}에서 ${I.m.toFixed(1)} m`;
 function polySegs(pts){const p=pg(),tol=SNAP/V.z,v=[pts[0],pts[pts.length-1]],segs=[];SEGE=null;   /* 한 획 = 무조건 한 직선 (시작점 → 펜 뗀 곳) */let[a,k0]=snapPt(v[0],p,tol);
-  for(let i=1;i<v.length;i++){let b=v[i];const dx=b[0]-a[0],dy=b[1]-a[1],hor=nearAxis(dy,dx),ver=nearAxis(dx,dy);
-    b=gs(b);if(hor)b=[b[0],a[1]];else if(ver)b=[a[0],b[1]];
-    const nn=snapNode(b,p,tol),nb=nn||snapSeg(b,p,tol*0.5);   /* 긋는 동안은 안 붙음 — 끝이 기둥·끝점 바로 위면 그 점, 선 바로 위면 그 선에만 */
+  for(let i=1;i<v.length;i++){const[pb,hor,ver]=polar(a,v[i]),q=hor||ver?pb:v[i];let b=pb;   /* 사선은 펜 뗀 자리 그대로 기둥·끝을 찾음 (15° 로 돌리기 전) */
+    const nn=snapNode(q,p,tol)||snapNode(v[i],p,tol),nb=nn||snapSeg(q,p,tol*0.5);   /* 긋는 동안은 안 붙음 — 끝이 기둥·끝점 바로 위면 그 점, 선 바로 위면 그 선에만 */
     if(nb)b=p.type==='plan'&&hor?[nb[0],a[1]]:p.type==='plan'&&ver?[a[0],nb[1]]:nb;   /* 평면은 곧게 우선, 트러스 입면은 절점 잇기 우선 */
     if(Math.hypot(b[0]-a[0],b[1]-a[1])<18/V.z)continue;const sg=[a.map(r1),b.map(r1)],h=bow(pts);if(h)sg.push(gridSnap?Math.round(h/4)*4:r1(h));sg.k0=k0;sg.nn=nn;sg.ax=hor?1:ver?0:null;segs.push(sg);a=b;}   /* [시작, 끝, 솟음?] */
   return segs;}
@@ -261,14 +264,14 @@ function square(p,sg){const N=sg.nn;if(p.type!=='plan'||sg[2]||!N)return;const a
   const ends=q=>{const o=[];p.hl.forEach(m=>m.pts.forEach((e,i)=>{if(at(e,q))o.push({m,e,f:m.pts[1-i]});}));return o;},along=m=>!m.h&&Math.abs(m.pts[0][1-j]-m.pts[1][1-j])<0.6,   /* j 쪽으로 뻗은 부재 = 끝을 밀어도 곧음 */
     body=q=>p.hl.every(m=>m.pts.some(e=>at(e,q))||sDist(q,m)>0.5||along(m)),
     ok=(q,v)=>!p.cols.some(c=>at([c.x,c.y],q))&&body(q)&&ends(q).every(x=>along(x.m)&&!x.m.L&&Math.abs(x.f[j]-v)>8);   /* 기둥 · 길이를 숫자로 넣은 부재(L) · 0.2 m 보다 짧아질 부재가 붙은 끝은 안 밂 */
-  if(sg.k0!=='node'){if(body(a)){a[j]=r1(N[j]);sg[1]=N.map(r1);}else if(ok(N,a[j])){ends(N).forEach(x=>{x.e[j]=a[j];});sg[1]=N.map(r1);sg[1][j]=a[j];}return;}
-  const c=[[a,N,1],[N,a,0]].sort((x,y)=>ends(x[0]).length-ends(y[0]).length).find(x=>ok(x[0],x[1][j]));if(!c)return;
+  if(sg.k0!=='node'){if(body(a)){a[j]=r1(N[j]);sg[1]=N.map(r1);}else if(ok(N,a[j])){ends(N).forEach(x=>{x.e[j]=a[j];});sg[1]=N.map(r1);sg[1][j]=a[j];}else sg[1]=N.map(r1);return;}
+  const c=[[a,N,1],[N,a,0]].sort((x,y)=>ends(x[0]).length-ends(y[0]).length).find(x=>ok(x[0],x[1][j]));if(!c){sg[1]=N.map(r1);return;}   /* 못 맞추면 그 점에 붙임 (살짝 기울어도 끊기지 않게) */
   ends(c[0]).forEach(x=>{x.e[j]=r1(c[1][j]);});sg[1]=N.map(r1);if(c[2])a[j]=r1(N[j]);else sg[1][j]=a[j];}
 function mkPoly(pts){const segs=polySegs(pts),p=pg();if(!segs.length)return;mod();segs.forEach(s=>square(p,s));let moved=0;
   segs.forEach(s=>{const o={p:penId,pts:[s[0],s[1]]};if(s[2])o.h=s[2];p.hl.push(o);const k=pal(penId);
     if(k.kind==='beam'&&beamCls(p,o)==='B'&&p.hl.some(h=>h!==o&&h.p===penId&&beamCls(p,h)==='G')){   /* 큰보 색으로 작은보를 그으면 → 작은보 전용 색 (규격 따로) */
       let c=D.pal.find(x=>x.of===k.id);if(!c){c={id:k.id+'b',kind:'beam',spec:k.spec,c:autoColor('beam'),of:k.id};D.pal.push(c);}o.p=c.id;moved=1;}});
-  if(moved)toast('작은보(B)는 다른 색으로 나눴습니다 — 규격은 왼쪽 범례에서');}
+  if(moved)toast('작은보(B)는 다른 색으로 나눴습니다 — 규격은 왼쪽 범례에서');else if(segs.some(s=>s[2]))toast('⌒ 곡선으로 들어갔습니다 — 곧은 선이었으면 ↩ 되돌리기');}
 
 
 /* ── 부재명 자동 — DS-PLAN 과 같은 규칙: 기둥 C(철골 SC) 규격별 · 보는 큰보 G / 작은보 B(끝이 다른 보 위) · 벽 W
@@ -367,7 +370,7 @@ function dragMove(o,dl){const p=pg(),it=p[o.h.k][o.h.i],O=o.orig,tol=SNAP/V.z;if
   else if(o.h.k==='hl'&&o.h.part==='mid'){const[nx,ny,L]=arcN(it),h=Math.max(-L,Math.min(L,(O.h||0)+dl[0]*nx+dl[1]*ny));   /* ◇ 끌기 = 휘기 (거의 곧으면 다시 직선) */
     if(Math.abs(h)<8/V.z)delete it.h;else it.h=gridSnap?Math.round(h/4)*4:r1(h);}
   else if(o.h.k==='hl'&&o.h.part!=='body'){const e=o.h.part,fix=it.pts[1-e];let q=mv(O.pts[e]);const n=snapNode(q,others,tol)||snapSegQ(q,others,tol*0.5)||snapSeg(q,others,tol*0.5,1);
-    if(n)q=n;else{q=gs(q);const dx=q[0]-fix[0],dy=q[1]-fix[1];if(p.type==='plan'){if(nearAxis(dy,dx))q=[q[0],fix[1]];else if(nearAxis(dx,dy))q=[fix[0],q[1]];}}
+    if(n)q=n;else q=p.type==='plan'&&!it.h?polar(fix,q)[0]:gs(q);
     it.pts[e]=q.map(r1);}
   else if(o.h.k==='hl'){const a=mv(O.pts[0]),b=mv(O.pts[1]),na=snapNode(a,others,tol),nb=na?null:snapNode(b,others,tol),ga=gs(a);   /* 한쪽 끝이 기둥·선 끝에 닿으면 붙임 */
     const sh=na?[na[0]-a[0],na[1]-a[1]]:nb?[nb[0]-b[0],nb[1]-b[1]]:[ga[0]-a[0],ga[1]-a[1]];it.pts=[a,b].map(q=>[r1(q[0]+sh[0]),r1(q[1]+sh[1])]);}

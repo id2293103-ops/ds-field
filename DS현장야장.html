@@ -84,7 +84,7 @@ const SPECS={col:['400x400','500x500','500x400','400x500','600x600','300x300','�
   beam:['300x600','300x500','300x700','350x600','400x600','400x700','250x500','200x400','300x450','H-300x150','H-350x175','H-400x200','H-450x200','H-500x200','ㄷ150x75'],
   wall:['200','100','190','RC150','RC200','RC250','RC300'],truss:['P-48.6x2.3','P-60.5x3.2','P-76.3x3.2','L-50x50x6','L-65x65x6','ㄷ100x50']};
 const KC={wall:['#343a40','#868e96','#795548','#495057'],col:['#e03131','#c2255c','#f76707','#9c36b5','#d6336c'],beam:['#f5c518','#4dabf7','#9775fa','#3bc9db','#ff8787','#69db7c','#a9743b','#2b8a7e','#e599f7','#c9a227'],truss:['#ae3ec9','#7048e8','#1098ad','#0b7285']};
-const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (위에서 보|벽|트러스 · 규격 고름) · 한 획 = 한 부재 (둥글게 그으면 곡선) · 가로·세로는 곧게, 사선은 15° 단위, 길이는 0.1 m 단위 · 펜을 기둥에 대었다가 보 위로 옮기면 「기둥에서 ○ m」(0.1 m 단위) · 기둥 규격 다르면 다른 색으로 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
+const HINT={mem:'위에서 색 고르고: 톡 = 기둥, 긋기 = 보·벽 (위에서 보|벽|트러스 · 규격 고름) · 한 획 = 한 부재 (둥글게 그으면 곡선) · 가로·세로(5° 안)는 곧게, 사선은 그은 각도대로, 길이는 0.1 m 단위 · 기둥·끝에 펜을 0.4초쯤 대고 있으면 × 로 잡힘 → 옮기면 그 가로·세로 줄에 점선으로 맞춰 줌 · 잡은 기둥에서 보 위로 옮기면 「기둥에서 ○ m」(0.1 m 단위) · 기둥 규격 다르면 다른 색으로 · 찍힌 기둥 다시 톡 = 90° · S펜 옆 버튼 = 지우개',
   dim:'부재 톡 = 길이 고치기 (그 부재 끝의 기둥 줄이 옮겨짐) · 바깥 치수 숫자 톡 = 그 간격 고치기 · 부재 옆에 숫자를 써도 됨 · 치수는 최외곽에 자동 (기둥 줄, 없으면 벽 줄) · 부재 길이는 부재 가운데 (사선도) · 단위 m (6000 = 6)',
   memo:'자유 메모 (실명·Mirror·특기사항 등 — PDF·캐드 도면에 그린 그대로 들어감)',mark:'조사 종류 고르고 위치 톡 → 바로 카메라 (찍은 사진은 그 표시 옆에)',photo:'사진 찍을 위치 톡 → 카메라',del:'지울 것을 톡 또는 문지르기',
   sel:'톡 = 선택 → 끌어서 옮기기 · 선 끝 동그라미 끌기 = 늘이기/줄이기 · ◇ 끌기 = 곡선으로 휘기 · 아래 색 버튼 = 규격 바꾸기 · 기둥을 옮기면 붙은 선도 따라옴',
@@ -181,7 +181,7 @@ function draw(over){g.setTransform(dpr,0,0,dpr,0,0);const W=cv.clientWidth,H=cv.
   bgDraw(g,pg(),V.z,V.ox,V.oy);
   const st=GRID*V.z;if(st>=7){g.strokeStyle=gridSnap?'#c9d4e0':'#e9eef4';g.lineWidth=1;g.beginPath();for(let x=V.ox%st;x<W;x+=st){g.moveTo(x,0);g.lineTo(x,H);}for(let y=V.oy%st;y<H;y+=st){g.moveTo(0,y);g.lineTo(W,y);}g.stroke();}
   const gb=ghostPg();if(gb)ghostDraw(gb);
-  render(g,pg(),V.z,V.ox,V.oy);selDraw();if(!act&&hov){hoverDraw();guideDraw();}
+  render(g,pg(),V.z,V.ox,V.oy);selDraw();if(!act&&hov){hoverDraw();guideDraw();}else if(act&&act.drag)guideDraw();
   if(inkBuf.length){g.strokeStyle='#1c7ed6';g.lineWidth=2.4;g.lineCap='round';inkBuf.forEach(s=>{g.beginPath();s.forEach((w,i)=>{const x=w[0]*V.z+V.ox,y=w[1]*V.z+V.oy;i?g.lineTo(x,y):g.moveTo(x,y);});if(s.length===1)g.lineTo(s[0][0]*V.z+V.ox+.5,s[0][1]*V.z+V.oy);g.stroke();});}
   if(over)over();}
 
@@ -222,22 +222,32 @@ function rdp(pts,eps){if(pts.length<3)return pts;const a=pts[0],b=pts[pts.length
   pts.forEach((q,i)=>{const d=Math.abs((b[0]-a[0])*(a[1]-q[1])-(a[0]-q[0])*(b[1]-a[1]))/L;if(d>md){md=d;mi=i;}});
   return md<eps?[a,b]:rdp(pts.slice(0,mi+1),eps).slice(0,-1).concat(rdp(pts.slice(mi),eps));}
 /* 한 획 → 꺾인 곳마다 직선 (가로/세로는 곧게, 끝은 기둥·선 끝에 붙임) */
-/* 펜을 대 본 기둥·끝점(최근 3개) = 「기둥에서 ○ m」 재는 기준 */
-let trk=[];
-function trackHover(q){const n=nodes(pg()).find(n=>Math.hypot(n[0]-q[0],n[1]-q[1])<14/V.z);if(n&&!trk.some(m=>m[0]===n[0]&&m[1]===n[1])){trk.push([n[0],n[1]]);if(trk.length>3)trk.shift();}}
-/* 펜을 대 봤던 점 중 지금 쪽에 실제로 있는 것만 — 지운 부재·새 현장의 옛 점에 붙지 않게 */
-function liveTrk(){const N=nodes(pg());trk=trk.filter(n=>N.some(m=>m[0]===n[0]&&m[1]===n[1]));}
-function guideDraw(){if(tool!=='mem')return;liveTrk();const S=w=>[w[0]*V.z+V.ox,w[1]*V.z+V.oy];g.save();g.strokeStyle='rgba(28,126,214,.85)';g.lineWidth=1.3;
+/* 캐드처럼 점 잡기: 펜을 기둥·부재 끝에 0.4초쯤 대고 있으면 잡힘(×, 최근 3개) → 다른 데로 옮기면 그 점의 가로·세로 줄에 맞춰 줌(점선 보조선) · 「기둥에서 ○ m」 재는 기준도 됨
+   스치기만 한 점은 안 잡힘 — 먼 점에 저절로 붙던 옛 줄 맞춤과 달리 고른 점에만 */
+let trk=[],dwN=null,dwT=0,TRK=[];
+const trkNodes=()=>nodes(withBelow(pg()));   /* 아래층 기둥도 잡힘 */
+function trackHover(q){const n=q&&trkNodes().find(n=>Math.hypot(n[0]-q[0],n[1]-q[1])<14/V.z);if(n&&dwN&&n[0]===dwN[0]&&n[1]===dwN[1])return;
+  clearTimeout(dwT);dwN=n||null;if(n&&!trk.some(m=>m[0]===n[0]&&m[1]===n[1]))dwT=setTimeout(()=>{trk.push([n[0],n[1]]);if(trk.length>3)trk.shift();draw();},400);}
+/* 잡았던 점 중 지금 쪽에 실제로 있는 것만 — 지운 부재·새 현장의 옛 점에 붙지 않게 */
+function liveTrk(){const N=trkNodes();trk=trk.filter(n=>N.some(m=>m[0]===n[0]&&m[1]===n[1]));}
+/* 추적선: 잡힌 점과 x(세로 줄)·y(가로 줄)가 tol 안이면 그 줄에 — m = 1 x만 · 2 y만 · 3 둘 다 (x·y 를 다른 점에서 맞추면 교점) · 맞춘 줄은 TRK 에 */
+function track(q,tol,m){if(tool!=='mem'&&tool!=='sel')return null;liveTrk();let bx=null,by=null;
+  trk.forEach(n=>{if(m&1&&Math.abs(n[0]-q[0])<tol&&(!bx||Math.abs(n[0]-q[0])<Math.abs(bx[0]-q[0])))bx=n;if(m&2&&Math.abs(n[1]-q[1])<tol&&(!by||Math.abs(n[1]-q[1])<Math.abs(by[1]-q[1])))by=n;});
+  if(!bx&&!by)return null;const g=gs(q),r=[bx?bx[0]:g[0],by?by[1]:g[1]];if(bx)TRK.push([bx,r]);if(by)TRK.push([by,r]);return r;}
+/* 부재 끝: 시작점에서 곧게(polar) 한 뒤 추적선 — 가로 부재는 x 만, 세로 부재는 y 만, 사선은 둘 다 */
+const trackEnd=(a,q,[pb,hor,ver],tol)=>{const t=track(hor||ver?pb:q,tol,hor?1:ver?2:3);return t&&(hor?[t[0],a[1]]:ver?[a[0],t[1]]:t);};
+function guideDraw(){if(tool!=='mem'&&tool!=='sel')return;liveTrk();const S=w=>[w[0]*V.z+V.ox,w[1]*V.z+V.oy];g.save();g.strokeStyle='rgba(28,126,214,.85)';g.lineWidth=1.3;
   trk.forEach(n=>{const s=S(n);g.beginPath();g.moveTo(s[0]-5,s[1]-5);g.lineTo(s[0]+5,s[1]+5);g.moveTo(s[0]+5,s[1]-5);g.lineTo(s[0]-5,s[1]+5);g.stroke();});   /* 잡힌 점 × */
+  g.setLineDash([6,4]);TRK.forEach(([n,r])=>{const a=S(n),b=S(r),e=40/(Math.hypot(b[0]-a[0],b[1]-a[1])||1);g.beginPath();g.moveTo(...a);g.lineTo(b[0]+(b[0]-a[0])*e,b[1]+(b[1]-a[1])*e);g.stroke();});   /* 보조선: 잡힌 점 → 맞춘 자리 (조금 더 길게) */
   g.restore();}
 /* 한 점 맞춤: 가까운 기둥 중심·부재 끝 → 펜이 선에 닿아 있으면 선 위 → 모눈(켰을 때). 반환 [점, 종류] */
-function snapPt(q,p,tol){SEGI=null;let n=snapNode(q,p,tol);if(n)return[n,'node'];n=snapSegQ(q,p,tol*0.5)||snapSeg(q,p,tol*0.5,1);if(n)return[n,'seg'];return[gs(q),gridSnap?'grid':'free'];}
+function snapPt(q,p,tol){SEGI=null;TRK=[];let n=snapNode(q,p,tol);if(n)return[n,'node'];n=snapSegQ(q,p,tol*0.5)||snapSeg(q,p,tol*0.5,1);if(n)return[n,'seg'];n=track(q,tol*0.75,3);if(n)return[n,'trk'];return[gs(q),gridSnap?'grid':'free'];}
 const SNAP=16;   /* 화면 px — 이 안이면 붙음 */
-const ORTHO=0.22,nearAxis=(a,b)=>Math.abs(a)<Math.max(Math.abs(b)*ORTHO,6/V.z);   /* 가로·세로로 곧게 펴는 범위: 약 12° 안 (짧은 선은 손떨림 6 px) */
-/* 펜 뗀 곳 → 시작점에서 곧게: 가로·세로(12° 안) 아니면 15° 단위 각도 · 길이는 0.1 m 단위 — [끝점, 가로?, 세로?] */
+const ORTHO=Math.tan(5*Math.PI/180),nearAxis=(a,b)=>Math.abs(a)<Math.max(Math.abs(b)*ORTHO,6/V.z);   /* 가로·세로로 곧게 펴는 범위: 5° 안 (짧은 선은 손떨림 6 px) — 그 밖은 그은 각도 그대로 */
+/* 펜 뗀 곳 → 시작점에서: 가로·세로(5° 안)면 곧게, 아니면 그은 각도 그대로 · 길이는 0.1 m 단위 — [끝점, 가로?, 세로?] */
 function polar(a,b){const dx=b[0]-a[0],dy=b[1]-a[1],hor=nearAxis(dy,dx),ver=!hor&&nearAxis(dx,dy),q=v=>Math.round(v/4)*4,L=q(Math.hypot(dx,dy));   /* 가로·세로는 펜 뗀 자리의 x(y) 그대로 0.1 m 로 */
   if(hor)return[[a[0]+Math.sign(dx)*q(Math.abs(dx)),a[1]],true,false];if(ver)return[[a[0],a[1]+Math.sign(dy)*q(Math.abs(dy))],false,true];
-  const an=Math.round(Math.atan2(dy,dx)/(Math.PI/12))*(Math.PI/12);return[[a[0]+L*Math.cos(an),a[1]+L*Math.sin(an)],false,false];}
+  const an=Math.atan2(dy,dx);return[[a[0]+L*Math.cos(an),a[1]+L*Math.sin(an)],false,false];}
 /* 한 획 → 꺾인 곳마다 직선 (가로/세로는 곧게, 끝은 기둥·선 끝에 붙임) — 그리는 중 미리보기에도 씀 */
 
 /* 선 위에 붙기: 기준점(펜을 대 본 기둥·끝, 없으면 가까운 끝)에서 0.1 m 단위 거리로 — SEGI = {기준, m, 기둥?} */
@@ -249,10 +259,11 @@ function snapSegQ(q,p,tol){let bt=null,bd=tol;p.hl.forEach(s=>{if(s.h)return;con
   const rp=along(ref),st=0.1*GRID,np=rp+Math.round((pos-rp)/st)*st;if(np<=0.5||np>=L-0.5)return null;
   SEGI={ref:[ref[0],ref[1]],m:Math.abs(np-rp)/GRID,col:p.cols.some(k=>Math.hypot(k.x-ref[0],k.y-ref[1])<1)};return[r1(a[0]+ux*np),r1(a[1]+uy*np)];}
 const segTxt=I=>`${I.col?'기둥':'끝'}에서 ${I.m.toFixed(1)} m`;
-function polySegs(pts){const p=pg(),tol=SNAP/V.z,v=[pts[0],pts[pts.length-1]],segs=[];SEGE=null;   /* 한 획 = 무조건 한 직선 (시작점 → 펜 뗀 곳) */let[a,k0]=snapPt(v[0],p,tol);
-  for(let i=1;i<v.length;i++){const[pb,hor,ver]=polar(a,v[i]),q=hor||ver?pb:v[i];let b=pb;   /* 사선은 펜 뗀 자리 그대로 기둥·끝을 찾음 (15° 로 돌리기 전) */
+function polySegs(pts){const p=pg(),tol=SNAP/V.z,v=[pts[0],pts[pts.length-1]],segs=[];SEGE=null;   /* 한 획 = 무조건 한 직선 (시작점 → 펜 뗀 곳) */let[a,k0]=snapPt(v[0],p,tol);TRK=[];
+  for(let i=1;i<v.length;i++){const[pb,hor,ver]=polar(a,v[i]),q=hor||ver?pb:v[i];let b=pb;   /* 사선은 펜 뗀 자리 그대로 기둥·끝을 찾음 (길이 맞추기 전) */
     const nn=snapNode(q,p,tol)||snapNode(v[i],p,tol),nb=nn||snapSeg(q,p,tol*0.5);   /* 긋는 동안은 안 붙음 — 끝이 기둥·끝점 바로 위면 그 점, 선 바로 위면 그 선에만 */
     if(nb)b=p.type==='plan'&&hor?[nb[0],a[1]]:p.type==='plan'&&ver?[a[0],nb[1]]:nb;   /* 평면은 곧게 우선, 트러스 입면은 절점 잇기 우선 */
+    else b=trackEnd(a,v[i],[pb,hor,ver],tol*0.75)||pb;   /* 잡아 둔 기둥의 줄에 맞춤 */
     if(Math.hypot(b[0]-a[0],b[1]-a[1])<18/V.z)continue;const sg=[a.map(r1),b.map(r1)],h=bow(pts);if(h)sg.push(gridSnap?Math.round(h/4)*4:r1(h));sg.k0=k0;sg.nn=nn;sg.ax=hor?1:ver?0:null;segs.push(sg);a=b;}   /* [시작, 끝, 솟음?] */
   return segs;}
 /* 직각 맞춤 (평면의 곧은 부재): 거의 가로·세로로 그은 부재의 끝이 기둥·끝점에 붙는데 줄이 어긋나 있으면 (눈대중으로 그리면 늘 조금 어긋남)
@@ -307,8 +318,8 @@ const lenM=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1])/GRID;   /* 그린 길이 (m, �
 function mkCol(q){const p=pg(),tol=SNAP/V.z,hit=p.cols.find(c=>inCol(c,q,tol));
   if(hit){mod();if(hit.p!==penId)hit.p=penId;else hit.r=hit.r?0:1;return;}   /* 찍힌 기둥 톡 = 90° 돌림 (다른 기둥 색이면 종류만 바꿈) */
   q=colSnap(q,withBelow(p),null,tol);mod();p.cols.push({p:penId,x:r1(q[0]),y:r1(q[1])});}
-/* 기둥 자리: 가까운 기둥·선 끝 → 모눈(켰을 때) */
-function colSnap(q,p,cols,tol){return snapNode(q,p,tol)||gs(q);}
+/* 기둥 자리: 가까운 기둥·선 끝 → 잡아 둔 기둥의 가로·세로 줄 → 모눈(켰을 때) */
+function colSnap(q,p,cols,tol){TRK=[];return snapNode(q,p,tol)||track(q,tol*0.75,3)||gs(q);}
 
 
 
@@ -363,14 +374,14 @@ function hitSel(q){const p=pg(),t=26/V.z,d=(x,y)=>Math.hypot(x-q[0],y-q[1]);let 
 function dragStart(h){const p=pg(),it=p[h.k][h.i],o={h,orig:JSON.parse(JSON.stringify(it)),moved:false};
   if(h.k==='cols'){o.node=[];p.hl.forEach(s=>s.pts.forEach(pt=>{if(Math.abs(pt[0]-it.x)<.5&&Math.abs(pt[1]-it.y)<.5)o.node.push(pt);}));}   /* 기둥에 붙은 선 끝도 같이 */
   return o;}
-function dragMove(o,dl){const p=pg(),it=p[o.h.k][o.h.i],O=o.orig,tol=SNAP/V.z;if(!it)return;
+function dragMove(o,dl){TRK=[];const p=pg(),it=p[o.h.k][o.h.i],O=o.orig,tol=SNAP/V.z;if(!it)return;
   const others={cols:p.cols.filter(c=>c!==it),hl:p.hl.filter(s=>s!==it)},mv=q=>[q[0]+dl[0],q[1]+dl[1]];
   if(o.h.k==='cols'){const sub={cols:others.cols,hl:p.hl.filter(s=>!o.node.some(pt=>s.pts.includes(pt)))},q=colSnap(mv([O.x,O.y]),sub,others.cols,tol);
     it.x=r1(q[0]);it.y=r1(q[1]);o.node.forEach(pt=>{pt[0]=it.x;pt[1]=it.y;});}
   else if(o.h.k==='hl'&&o.h.part==='mid'){const[nx,ny,L]=arcN(it),h=Math.max(-L,Math.min(L,(O.h||0)+dl[0]*nx+dl[1]*ny));   /* ◇ 끌기 = 휘기 (거의 곧으면 다시 직선) */
     if(Math.abs(h)<8/V.z)delete it.h;else it.h=gridSnap?Math.round(h/4)*4:r1(h);}
   else if(o.h.k==='hl'&&o.h.part!=='body'){const e=o.h.part,fix=it.pts[1-e];let q=mv(O.pts[e]);const n=snapNode(q,others,tol)||snapSegQ(q,others,tol*0.5)||snapSeg(q,others,tol*0.5,1);
-    if(n)q=n;else q=p.type==='plan'&&!it.h?polar(fix,q)[0]:gs(q);
+    if(n)q=n;else if(p.type==='plan'&&!it.h){const r=polar(fix,q);q=trackEnd(fix,q,r,tol*0.75)||r[0];}else q=gs(q);
     it.pts[e]=q.map(r1);}
   else if(o.h.k==='hl'){const a=mv(O.pts[0]),b=mv(O.pts[1]),na=snapNode(a,others,tol),nb=na?null:snapNode(b,others,tol),ga=gs(a);   /* 한쪽 끝이 기둥·선 끝에 닿으면 붙임 */
     const sh=na?[na[0]-a[0],na[1]-a[1]]:nb?[nb[0]-b[0],nb[1]-b[1]]:[ga[0]-a[0],ga[1]-a[1]];it.pts=[a,b].map(q=>[r1(q[0]+sh[0]),r1(q[1]+sh[1])]);}
@@ -521,17 +532,17 @@ function bgGesture(b,st,k){const m0=toW(...gPrev.m),m1=toW(...st.m);let da=st.n>
 cv.onpointerdown=e=>{if(edAt)commitEd(false);try{cv.setPointerCapture(e.pointerId);}catch(_){}const s=[e.offsetX,e.offsetY];
   if(e.pointerType==='touch'){if(act&&act.pen)return;touches.set(e.pointerId,s);gPrev=null;
     if(fingerDraw&&touches.size===1){act={id:e.pointerId,s,a:toW(...s),pts:[toW(...s)]};startAct();}else act=null;return;}
-  const er=e.pointerType==='pen'&&(e.button===2||e.button===5||(e.buttons&34));if(e.button>0&&!er)return;hov=null;   /* S펜 옆 버튼 누른 채 = 지우개 */
+  const er=e.pointerType==='pen'&&(e.button===2||e.button===5||(e.buttons&34));if(e.button>0&&!er)return;hov=null;trackHover(null);   /* S펜 옆 버튼 누른 채 = 지우개 */
   act={id:e.pointerId,pen:e.pointerType==='pen',s,a:toW(...s),pts:[toW(...s)]};if(er){act.tool0=tool;tool='del';}touches.clear();startAct();};
 cv.oncontextmenu=e=>e.preventDefault();
-cv.onpointerleave=e=>{if(hov){hov=null;draw();}};
+cv.onpointerleave=e=>{trackHover(null);if(hov){hov=null;draw();}};
 /* S펜을 화면 가까이 대면(호버) 붙을 자리 미리 보여줌 */
 let hov=null;
 function hoverDraw(){if(!hov||['memo','photo','mark','bgadj'].includes(tool))return;const[q,kind]=snapPt(hov,pg(),SNAP/V.z),S=w=>[w[0]*V.z+V.ox,w[1]*V.z+V.oy],r=S(hov),s=S(q);
   g.save();g.strokeStyle='rgba(29,39,51,.45)';g.lineWidth=1.5;g.beginPath();g.arc(r[0],r[1],7,0,7);g.stroke();
   g.strokeStyle=g.fillStyle='#1c7ed6';g.lineWidth=2.5;
   if(kind==='node'){g.strokeRect(s[0]-8,s[1]-8,16,16);}else if(kind==='seg'){g.beginPath();g.moveTo(s[0],s[1]-9);g.lineTo(s[0]+9,s[1]);g.lineTo(s[0],s[1]+9);g.lineTo(s[0]-9,s[1]);g.closePath();g.stroke();}
-  else if(kind==='grid'){g.beginPath();g.moveTo(s[0]-8,s[1]);g.lineTo(s[0]+8,s[1]);g.moveTo(s[0],s[1]-8);g.lineTo(s[0],s[1]+8);g.stroke();}
+  else if(kind==='grid'||kind==='trk'){g.beginPath();g.moveTo(s[0]-8,s[1]);g.lineTo(s[0]+8,s[1]);g.moveTo(s[0],s[1]-8);g.lineTo(s[0],s[1]+8);g.stroke();}
   if(kind==='seg'&&SEGI){const rs=S(SEGI.ref);g.setLineDash([5,4]);g.lineWidth=3;g.strokeStyle='rgba(28,126,214,.7)';g.beginPath();g.moveTo(...rs);g.lineTo(...s);g.stroke();g.setLineDash([]);lenLabel(segTxt(SEGI),...s);}   /* 기둥에서 ○ m */
   g.restore();
   /* 기둥 찍기: 들어갈 자리 미리 보기 + 가장 가까운 기둥에서 가로·세로 거리 (m) */
@@ -550,7 +561,7 @@ cv.onpointermove=e=>{const s=[e.offsetX,e.offsetY];
       if(tool==='bgadj'&&pg().bg)bgGesture(pg().bg,st,k);
       else{const z=Math.max(.1,Math.min(30,V.z*k)),kk=z/V.z;V.ox=st.m[0]-(gPrev.m[0]-V.ox)*kk;V.oy=st.m[1]-(gPrev.m[1]-V.oy)*kk;V.z=z;draw();}}
     gPrev=st;return;}
-  if(!act||act.id!==e.pointerId){if(!act&&e.pointerType!=='touch'){hov=toW(...s);if(tool==='mem')trackHover(hov);draw();}return;}
+  if(!act||act.id!==e.pointerId){if(!act&&e.pointerType!=='touch'){hov=toW(...s);if(tool==='mem'||tool==='sel')trackHover(hov);draw();}return;}
   if(touches.size>1){act=null;return;}   /* 손가락 그리기 중 두 손가락 = 확대로 전환 */
   const ce=e.getCoalescedEvents?e.getCoalescedEvents():[];(ce.length?ce:[e]).forEach(c=>act.pts.push(toW(c.offsetX,c.offsetY)));act.e=s;
   const q=act.pts[act.pts.length-1];
@@ -563,7 +574,7 @@ cv.onpointermove=e=>{const s=[e.offsetX,e.offsetY];
     else if(tool==='dim'){g.lineWidth=2.4;path('#1c7ed6');}
     else if(tool==='mem'){g.lineWidth=3;g.globalAlpha=.25;path(penColor);g.globalAlpha=1;   /* 실제로 들어갈 곧은 선 + 길이 */
       const sg=polySegs(act.pts);g.strokeStyle=penColor;g.lineWidth=10;g.globalAlpha=.85;g.save();g.translate(V.ox,V.oy);g.scale(V.z,V.z);g.lineWidth=10/V.z;g.beginPath();sg.forEach(q=>hlPath(g,{pts:q,h:q[2]}));g.stroke();g.restore();g.globalAlpha=1;
-      const l=sg[sg.length-1];if(l){g.fillStyle='#1c7ed6';sg.forEach(([a,b])=>[a,b].forEach(w=>{const c=S(w);g.fillRect(c[0]-3,c[1]-3,6,6);}));const da=Math.round(Math.atan2(Math.abs(l[1][1]-l[0][1]),Math.abs(l[1][0]-l[0][0]))*180/Math.PI);lenLabel(l[2]?`⌒ ${(sLen({pts:l,h:l[2]})/GRID).toFixed(1)} m`:`${lenM(l[0],l[1]).toFixed(1)} m${da%90?` · ${da}°`:''}`,...s);}}});};
+      const l=sg[sg.length-1];if(l){g.fillStyle='#1c7ed6';sg.forEach(([a,b])=>[a,b].forEach(w=>{const c=S(w);g.fillRect(c[0]-3,c[1]-3,6,6);}));const da=Math.round(Math.atan2(Math.abs(l[1][1]-l[0][1]),Math.abs(l[1][0]-l[0][0]))*180/Math.PI);lenLabel(l[2]?`⌒ ${(sLen({pts:l,h:l[2]})/GRID).toFixed(1)} m`:`${lenM(l[0],l[1]).toFixed(1)} m${da%90?` · ${da}°`:''}`,...s);}guideDraw();}});};
 cv.onpointerup=cv.onpointercancel=e=>{if(touches.has(e.pointerId)){touches.delete(e.pointerId);gPrev=null;if(!touches.size&&gBg){gBg=0;save();}}
   if(!act||act.id!==e.pointerId)return;const a=act;act=null;
   if(a.tool0){tool=a.tool0;save();return ui();}   /* S펜 옆 버튼 지우개 끝 → 원래 도구 */
